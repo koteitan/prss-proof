@@ -1,6 +1,8 @@
+[English](README.md) | [Japanese](README-ja.md)
+
 # prss-proof
 
-Version: **v0.1.0**
+Version: **v0.1.1**
 
 A machine-checked proof, in **Isabelle/HOL**, that **Bashicu's Primitive Sequence
 System** (原始数列システム) always terminates.
@@ -10,8 +12,8 @@ below $\varepsilon_0$ and show that each `expand` step strictly decreases this
 ordinal. Since the ordinals below $\varepsilon_0$ are well-founded, no infinite
 expansion is possible.
 
-See [`proof.html`](proof.html) for the mathematical write-up (MathJax, dark mode),
-and [`README-ja.md`](README-ja.md) for Japanese.
+See [proof.md](proof.md) for the mathematical write-up (also as
+[`proof.html`](proof.html) / [`index-ja.html`](index-ja.html), MathJax + dark mode).
 
 ## What is proved
 
@@ -28,7 +30,7 @@ strictly decreases the ordinal map `omap`.
 | `prss_defs.thy` | The primitive sequence, the `expand` step relation `step`, the bad root, and the forest ordinal map `omap`. |
 | `prss_paper.thy` | Statements of the propositions and the main theorem (all `sorry`). |
 | `prss_mechanized.thy` | The machine-checked proofs discharging them. |
-| `proof.html` | Human-readable mathematical proof. |
+| [`proof.md`](proof.md) | Human-readable mathematical proof (also `proof.html`). |
 
 Naming: paper statements are `p_*`, mechanized proofs `m_*`.
 
