@@ -1,6 +1,6 @@
 [← 戻る](README-ja.md) | [English](proof.md) | [Japanese](proof-ja.md)
 
-# ぶしくし氏の原始数列システムの停止性
+# バシク氏の原始数列システムの停止性
 
 自己完結な数学的証明で、Isabelle/HOL により形式検証したもの
 （`prss_ordinal.thy`, `prss_defs.thy`, `prss_paper.thy`, `prss_mechanized.thy`）。
@@ -10,7 +10,7 @@
 ## 1. 原始数列システム
 
 **原始数列**とは自然数の有限列 $\mathbf{S}=(S_0,S_1,\dots,S_{X-1})$（長さ $X$）である。
-カウンタ $n\in\mathbb{N}$ と活性化関数 $f$（ぶしくし氏は $f(n)=n^2$）を伴い、展開関数
+カウンタ $n\in\mathbb{N}$ と活性化関数 $f$（バシク氏は $f(n)=n^2$）を伴い、展開関数
 $\mathrm{expand}$ を次で定める。
 
 - $\mathrm{expand}([n]) = n$ &nbsp;（空列：カウンタを返す）；
@@ -176,5 +176,5 @@ $o$ は各ステップで真に減少し、$\prec$ は $\varepsilon_0$ 未満の
 ---
 
 出典：Koteitan「Purely mathematical definition of BMS」（巨大数研究 Wiki）；
-ぶしくし「BASIC言語による巨大数のまとめ」。順序数の核は `HOL-Library.Multiset` のみを
+バシク「BASIC言語による巨大数のまとめ」。順序数の核は `HOL-Library.Multiset` のみを
 用い、AFP のエントリは不要である。

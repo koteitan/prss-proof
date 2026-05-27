@@ -2,9 +2,9 @@
 
 # prss-proof
 
-Version: **v0.1.4**
+Version: **v0.1.5**
 
-ぶしくし氏の **原始数列システム（Primitive Sequence System）** が必ず停止する
+バシク氏の **原始数列システム（Primitive Sequence System）** が必ず停止する
 ことを、**Isabelle/HOL** で機械的に検証したものです。
 
 方針は古典的です。各原始数列を $\varepsilon_0$ 未満の順序数に写し、`expand` の各
@@ -69,4 +69,4 @@ isbman build -d . -v PRSS
 ## 出典
 
 - Koteitan, *Purely mathematical definition of BMS*, 巨大数研究 Wiki ユーザーブログ.
-- ぶしくし, *BASIC言語による巨大数のまとめ*, 巨大数研究 Wiki ユーザーブログ, 2015.
+- バシク, *BASIC言語による巨大数のまとめ*, 巨大数研究 Wiki ユーザーブログ, 2015.
