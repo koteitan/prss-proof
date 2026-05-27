@@ -162,6 +162,29 @@ Since $o$ strictly decreases at every step and $\prec$ is well-founded on the
 ordinals below $\varepsilon_0$, the expansion relation is the inverse image of a
 well-founded relation under $o$, hence well-founded. $\qquad\blacksquare$
 
+## 6. Correspondence with the Isabelle formalisation
+
+| Notion in this document | Isabelle | File |
+|---|---|---|
+| ordinal below $\varepsilon_0$, $H\,M$ | `datatype hord = H "hord multiset"` | `prss_ordinal.thy` |
+| order $\prec$ | `hlt` (`hlt (H M) (H N) ⟷ multp hlt M N`) | `prss_ordinal.thy` |
+| $\prec$ is well-founded | `wfP_hlt` | `prss_ordinal.thy` |
+| primitive sequence | `nat list` | `prss_defs.thy` |
+| ordinal map $o$ | `omap :: nat list ⇒ hord` | `prss_defs.thy` |
+| bad set / bad root $r$ | `badset` / `badroot` | `prss_defs.thy` |
+| one expansion step $S \to T$ | `step :: nat list ⇒ nat list ⇒ bool` (`drop0`, `bad`) | `prss_defs.thy` |
+| (★) append increases $o$ | `omap_snoc_increases` | `prss_mechanized.thy` |
+| §4.2 drop-zero decrease | `m_drop0_decreases` | `prss_mechanized.thy` |
+| §4.3 $o(\mathbf{B}^{k+1})=H((k{+}1)\cdot\lbrace o(\mathbf{B}_t)\rbrace)$ | `omap_rep` | `prss_mechanized.thy` |
+| §4.3 core decrease | `omap_core` | `prss_mechanized.thy` |
+| §4.3 with context $\mathbf{G}$ | `omap_BADCTX` | `prss_mechanized.thy` |
+| §4.3 bad-part decrease | `m_bad_decreases` | `prss_mechanized.thy` |
+| §5 step decreases $o$ | `m_step_decreases` | `prss_mechanized.thy` |
+| §5 termination | `m_termination`, `m_no_infinite_expansion` | `prss_mechanized.thy` |
+
+The statements live in `prss_paper.thy` (as `p_*`, kept `sorry`); the proofs are
+the `m_*` facts in `prss_mechanized.thy`. Build with `isbman build -d . -v PRSS`.
+
 ---
 
 Source: Koteitan, "Purely mathematical definition of BMS" (Googology Wiki);

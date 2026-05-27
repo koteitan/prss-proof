@@ -146,6 +146,29 @@ $\mathbf{B}_t\ge m$。あとは `omap_BADCTX`。
 $o$ は各ステップで真に減少し、$\prec$ は $\varepsilon_0$ 未満の順序数上で整礎なので、
 展開関係は $o$ による整礎関係の逆像となり、整礎である。$\qquad\blacksquare$
 
+## 6. Isabelle 形式化との対応
+
+| 本文書の概念 | Isabelle | ファイル |
+|---|---|---|
+| $\varepsilon_0$ 未満の順序数、$H\,M$ | `datatype hord = H "hord multiset"` | `prss_ordinal.thy` |
+| 順序 $\prec$ | `hlt`（`hlt (H M) (H N) ⟷ multp hlt M N`） | `prss_ordinal.thy` |
+| $\prec$ の整礎性 | `wfP_hlt` | `prss_ordinal.thy` |
+| 原始数列 | `nat list` | `prss_defs.thy` |
+| 順序数写像 $o$ | `omap :: nat list ⇒ hord` | `prss_defs.thy` |
+| bad set / bad root $r$ | `badset` / `badroot` | `prss_defs.thy` |
+| 展開1ステップ $S \to T$ | `step :: nat list ⇒ nat list ⇒ bool`（`drop0`, `bad`） | `prss_defs.thy` |
+| (★) 末尾追加で $o$ 増加 | `omap_snoc_increases` | `prss_mechanized.thy` |
+| §4.2 末尾0削除の減少 | `m_drop0_decreases` | `prss_mechanized.thy` |
+| §4.3 $o(\mathbf{B}^{k+1})=H((k{+}1)\cdot\lbrace o(\mathbf{B}_t)\rbrace)$ | `omap_rep` | `prss_mechanized.thy` |
+| §4.3 コア減少 | `omap_core` | `prss_mechanized.thy` |
+| §4.3 文脈 $\mathbf{G}$ つき | `omap_BADCTX` | `prss_mechanized.thy` |
+| §4.3 bad-part 減少 | `m_bad_decreases` | `prss_mechanized.thy` |
+| §5 ステップで $o$ 減少 | `m_step_decreases` | `prss_mechanized.thy` |
+| §5 停止性 | `m_termination`, `m_no_infinite_expansion` | `prss_mechanized.thy` |
+
+ステートメントは `prss_paper.thy`（`p_*`、`sorry` のまま）に、証明は
+`prss_mechanized.thy` の `m_*` にある。ビルドは `isbman build -d . -v PRSS`。
+
 ---
 
 出典：Koteitan「Purely mathematical definition of BMS」（巨大数研究 Wiki）；
