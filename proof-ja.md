@@ -108,12 +108,16 @@ $$o\big(\mathbf{B}^{ k+1}\big)\ \prec\ o\big(\mathbf{B} [m]\big).$$
 2つの計算で明快になる。第一に、$\mathbf{B}=v\#\mathbf{B}_t$ の $k$ 個連続コピーは、
 それぞれ $v$ を根とし子孫の森が $\mathbf{B}_t$ である $k$ 本の兄弟の木をなすので、
 
-$$o\big(\mathbf{B}^{ k+1}\big)=H\big( (k{+}1)\cdot\lbrace  o(\mathbf{B}_t) \rbrace  \big) \qquad(\text{補題 } \texttt{omap\_rep}).$$
+$$o\big(\mathbf{B}^{ k+1}\big)=H\big( (k{+}1)\cdot\lbrace  o(\mathbf{B}_t) \rbrace  \big)$$
+
+（補題 `omap_rep`）。
 
 第二に、$\mathbf{B} [m]=v\#(\mathbf{B}_t [m])$ では新しい $m$ は $v$ の子になる
 （$\mathbf{B}_t$ の全要素は $v$ を超え、$m>v$）ので、
 
-$$o\big(\mathbf{B} [m]\big)=H\big(\lbrace  o(\mathbf{B}_t [m]) \rbrace \big) \qquad(\text{補題 } \texttt{omap\_BfM}).$$
+$$o\big(\mathbf{B} [m]\big)=H\big(\lbrace  o(\mathbf{B}_t [m]) \rbrace \big)$$
+
+（補題 `omap_BfM`）。
 
 よって減少は1回のマルチセットステップとなる。すなわち1個の要素 $o(\mathbf{B}_t [m])$
 を、(★) により真に小さい $o(\mathbf{B}_t)$ の $k{+}1$ 個のコピーで置き換える。

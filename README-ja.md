@@ -2,7 +2,7 @@
 
 # prss-proof
 
-Version: **v0.1.3**
+Version: **v0.1.4**
 
 ぶしくし氏の **原始数列システム（Primitive Sequence System）** が必ず停止する
 ことを、**Isabelle/HOL** で機械的に検証したものです。

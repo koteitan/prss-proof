@@ -2,7 +2,7 @@
 
 # prss-proof
 
-Version: **v0.1.3**
+Version: **v0.1.4**
 
 A machine-checked proof, in **Isabelle/HOL**, that **Bashicu's Primitive Sequence
 System** (原始数列システム) always terminates.

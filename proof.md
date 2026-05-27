@@ -118,12 +118,16 @@ Two computations make this transparent. First, $k$ consecutive copies of
 $\mathbf{B}=v\#\mathbf{B}_t$ form $k$ sibling trees each rooted at $v$ with
 descendant forest $\mathbf{B}_t$, so
 
-$$o\big(\mathbf{B}^{ k+1}\big)=H\big( (k{+}1)\cdot\lbrace  o(\mathbf{B}_t) \rbrace  \big) \qquad(\text{lemma } \texttt{omap\_rep}).$$
+$$o\big(\mathbf{B}^{ k+1}\big)=H\big( (k{+}1)\cdot\lbrace  o(\mathbf{B}_t) \rbrace  \big)$$
+
+(lemma `omap_rep`).
 
 Second, in $\mathbf{B} [m]=v\#(\mathbf{B}_t [m])$ the new $m$ is a child of $v$
 (all of $\mathbf{B}_t$ exceeds $v$ and $m>v$), so
 
-$$o\big(\mathbf{B} [m]\big)=H\big(\lbrace  o(\mathbf{B}_t [m]) \rbrace \big) \qquad(\text{lemma } \texttt{omap\_BfM}).$$
+$$o\big(\mathbf{B} [m]\big)=H\big(\lbrace  o(\mathbf{B}_t [m]) \rbrace \big)$$
+
+(lemma `omap_BfM`).
 
 The decrease is therefore a single multiset step: replace the one element
 $o(\mathbf{B}_t [m])$ by $k{+}1$ copies of $o(\mathbf{B}_t)$, each strictly
