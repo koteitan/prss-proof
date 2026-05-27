@@ -154,21 +154,21 @@ $o$ は各ステップで真に減少し、$\prec$ は $\varepsilon_0$ 未満の
 
 | 本文書の概念 | Isabelle | ファイル:行 |
 |---|---|---|
-| $\varepsilon_0$ 未満の順序数、$H\,M$ | `datatype hord = H "hord multiset"` | `prss_ordinal.thy:16` |
-| 順序 $\prec$ | `hlt`（`hlt (H M) (H N) ⟷ multp hlt M N`） | `prss_ordinal.thy:20` |
-| $\prec$ の整礎性 | `wfP_hlt` | `prss_ordinal.thy:199` |
-| 原始数列 | `nat list` | `prss_defs.thy` |
-| 順序数写像 $o$ | `omap :: nat list ⇒ hord` | `prss_defs.thy:40` |
-| bad set / bad root $r$ | `badset` / `badroot` | `prss_defs.thy:67,70` |
-| 展開1ステップ $S \to T$ | `step :: nat list ⇒ nat list ⇒ bool`（`drop0`, `bad`） | `prss_defs.thy:76` |
-| (★) 末尾追加で $o$ 増加 | `omap_snoc_increases` | `prss_mechanized.thy:106` |
-| §4.2 末尾0削除の減少 | `m_drop0_decreases` | `prss_mechanized.thy:161` |
-| §4.3 $o(\mathbf{B}^{k+1})=H((k{+}1)\cdot\lbrace o(\mathbf{B}_t)\rbrace)$ | `omap_rep` | `prss_mechanized.thy:204` |
-| §4.3 コア減少 | `omap_core` | `prss_mechanized.thy:246` |
-| §4.3 文脈 $\mathbf{G}$ つき | `omap_BADCTX` | `prss_mechanized.thy:303` |
-| §4.3 bad-part 減少 | `m_bad_decreases` | `prss_mechanized.thy:426` |
-| §5 ステップで $o$ 減少 | `m_step_decreases` | `prss_mechanized.thy:494` |
-| §5 停止性 | `m_termination`, `m_no_infinite_expansion` | `prss_mechanized.thy:506,515` |
+| $\varepsilon_0$ 未満の順序数、$H\,M$ | `datatype hord = H "hord multiset"` | [prss_ordinal.thy:16](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L16) |
+| 順序 $\prec$ | `hlt`（`hlt (H M) (H N) ⟷ multp hlt M N`） | [prss_ordinal.thy:20](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L20) |
+| $\prec$ の整礎性 | `wfP_hlt` | [prss_ordinal.thy:199](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L199) |
+| 原始数列 | `nat list` | [prss_defs.thy](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy) |
+| 順序数写像 $o$ | `omap :: nat list ⇒ hord` | [prss_defs.thy:40](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L40) |
+| bad set / bad root $r$ | `badset` / `badroot` | [prss_defs.thy:67](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L67), [70](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L70) |
+| 展開1ステップ $S \to T$ | `step :: nat list ⇒ nat list ⇒ bool`（`drop0`, `bad`） | [prss_defs.thy:76](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L76) |
+| (★) 末尾追加で $o$ 増加 | `omap_snoc_increases` | [prss_mechanized.thy:106](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L106) |
+| §4.2 末尾0削除の減少 | `m_drop0_decreases` | [prss_mechanized.thy:161](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L161) |
+| §4.3 $o(\mathbf{B}^{k+1})=H((k{+}1)\cdot\lbrace o(\mathbf{B}_t)\rbrace)$ | `omap_rep` | [prss_mechanized.thy:204](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L204) |
+| §4.3 コア減少 | `omap_core` | [prss_mechanized.thy:246](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L246) |
+| §4.3 文脈 $\mathbf{G}$ つき | `omap_BADCTX` | [prss_mechanized.thy:303](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L303) |
+| §4.3 bad-part 減少 | `m_bad_decreases` | [prss_mechanized.thy:426](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L426) |
+| §5 ステップで $o$ 減少 | `m_step_decreases` | [prss_mechanized.thy:494](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L494) |
+| §5 停止性 | `m_termination`, `m_no_infinite_expansion` | [prss_mechanized.thy:506](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L506), [515](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L515) |
 
 ステートメントは `prss_paper.thy`（`p_*`、`sorry` のまま）に、証明は
 `prss_mechanized.thy` の `m_*` にある。ビルドは `isbman build -d . -v PRSS`。

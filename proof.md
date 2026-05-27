@@ -170,21 +170,21 @@ well-founded relation under $o$, hence well-founded. $\qquad\blacksquare$
 
 | Notion in this document | Isabelle | File:line |
 |---|---|---|
-| ordinal below $\varepsilon_0$, $H\,M$ | `datatype hord = H "hord multiset"` | `prss_ordinal.thy:16` |
-| order $\prec$ | `hlt` (`hlt (H M) (H N) ⟷ multp hlt M N`) | `prss_ordinal.thy:20` |
-| $\prec$ is well-founded | `wfP_hlt` | `prss_ordinal.thy:199` |
-| primitive sequence | `nat list` | `prss_defs.thy` |
-| ordinal map $o$ | `omap :: nat list ⇒ hord` | `prss_defs.thy:40` |
-| bad set / bad root $r$ | `badset` / `badroot` | `prss_defs.thy:67,70` |
-| one expansion step $S \to T$ | `step :: nat list ⇒ nat list ⇒ bool` (`drop0`, `bad`) | `prss_defs.thy:76` |
-| (★) append increases $o$ | `omap_snoc_increases` | `prss_mechanized.thy:106` |
-| §4.2 drop-zero decrease | `m_drop0_decreases` | `prss_mechanized.thy:161` |
-| §4.3 $o(\mathbf{B}^{k+1})=H((k{+}1)\cdot\lbrace o(\mathbf{B}_t)\rbrace)$ | `omap_rep` | `prss_mechanized.thy:204` |
-| §4.3 core decrease | `omap_core` | `prss_mechanized.thy:246` |
-| §4.3 with context $\mathbf{G}$ | `omap_BADCTX` | `prss_mechanized.thy:303` |
-| §4.3 bad-part decrease | `m_bad_decreases` | `prss_mechanized.thy:426` |
-| §5 step decreases $o$ | `m_step_decreases` | `prss_mechanized.thy:494` |
-| §5 termination | `m_termination`, `m_no_infinite_expansion` | `prss_mechanized.thy:506,515` |
+| ordinal below $\varepsilon_0$, $H\,M$ | `datatype hord = H "hord multiset"` | [prss_ordinal.thy:16](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L16) |
+| order $\prec$ | `hlt` (`hlt (H M) (H N) ⟷ multp hlt M N`) | [prss_ordinal.thy:20](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L20) |
+| $\prec$ is well-founded | `wfP_hlt` | [prss_ordinal.thy:199](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L199) |
+| primitive sequence | `nat list` | [prss_defs.thy](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy) |
+| ordinal map $o$ | `omap :: nat list ⇒ hord` | [prss_defs.thy:40](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L40) |
+| bad set / bad root $r$ | `badset` / `badroot` | [prss_defs.thy:67](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L67), [70](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L70) |
+| one expansion step $S \to T$ | `step :: nat list ⇒ nat list ⇒ bool` (`drop0`, `bad`) | [prss_defs.thy:76](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L76) |
+| (★) append increases $o$ | `omap_snoc_increases` | [prss_mechanized.thy:106](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L106) |
+| §4.2 drop-zero decrease | `m_drop0_decreases` | [prss_mechanized.thy:161](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L161) |
+| §4.3 $o(\mathbf{B}^{k+1})=H((k{+}1)\cdot\lbrace o(\mathbf{B}_t)\rbrace)$ | `omap_rep` | [prss_mechanized.thy:204](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L204) |
+| §4.3 core decrease | `omap_core` | [prss_mechanized.thy:246](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L246) |
+| §4.3 with context $\mathbf{G}$ | `omap_BADCTX` | [prss_mechanized.thy:303](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L303) |
+| §4.3 bad-part decrease | `m_bad_decreases` | [prss_mechanized.thy:426](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L426) |
+| §5 step decreases $o$ | `m_step_decreases` | [prss_mechanized.thy:494](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L494) |
+| §5 termination | `m_termination`, `m_no_infinite_expansion` | [prss_mechanized.thy:506](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L506), [515](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L515) |
 
 The statements live in `prss_paper.thy` (as `p_*`, kept `sorry`); the proofs are
 the `m_*` facts in `prss_mechanized.thy`. Build with `isbman build -d . -v PRSS`.
