@@ -168,23 +168,23 @@ well-founded relation under $o$, hence well-founded. $\qquad\blacksquare$
 
 ## 6. Correspondence with the Isabelle formalisation
 
-| Notion in this document | Isabelle | File |
+| Notion in this document | Isabelle | File:line |
 |---|---|---|
-| ordinal below $\varepsilon_0$, $H\,M$ | `datatype hord = H "hord multiset"` | `prss_ordinal.thy` |
-| order $\prec$ | `hlt` (`hlt (H M) (H N) ⟷ multp hlt M N`) | `prss_ordinal.thy` |
-| $\prec$ is well-founded | `wfP_hlt` | `prss_ordinal.thy` |
+| ordinal below $\varepsilon_0$, $H\,M$ | `datatype hord = H "hord multiset"` | `prss_ordinal.thy:16` |
+| order $\prec$ | `hlt` (`hlt (H M) (H N) ⟷ multp hlt M N`) | `prss_ordinal.thy:20` |
+| $\prec$ is well-founded | `wfP_hlt` | `prss_ordinal.thy:199` |
 | primitive sequence | `nat list` | `prss_defs.thy` |
-| ordinal map $o$ | `omap :: nat list ⇒ hord` | `prss_defs.thy` |
-| bad set / bad root $r$ | `badset` / `badroot` | `prss_defs.thy` |
-| one expansion step $S \to T$ | `step :: nat list ⇒ nat list ⇒ bool` (`drop0`, `bad`) | `prss_defs.thy` |
-| (★) append increases $o$ | `omap_snoc_increases` | `prss_mechanized.thy` |
-| §4.2 drop-zero decrease | `m_drop0_decreases` | `prss_mechanized.thy` |
-| §4.3 $o(\mathbf{B}^{k+1})=H((k{+}1)\cdot\lbrace o(\mathbf{B}_t)\rbrace)$ | `omap_rep` | `prss_mechanized.thy` |
-| §4.3 core decrease | `omap_core` | `prss_mechanized.thy` |
-| §4.3 with context $\mathbf{G}$ | `omap_BADCTX` | `prss_mechanized.thy` |
-| §4.3 bad-part decrease | `m_bad_decreases` | `prss_mechanized.thy` |
-| §5 step decreases $o$ | `m_step_decreases` | `prss_mechanized.thy` |
-| §5 termination | `m_termination`, `m_no_infinite_expansion` | `prss_mechanized.thy` |
+| ordinal map $o$ | `omap :: nat list ⇒ hord` | `prss_defs.thy:40` |
+| bad set / bad root $r$ | `badset` / `badroot` | `prss_defs.thy:67,70` |
+| one expansion step $S \to T$ | `step :: nat list ⇒ nat list ⇒ bool` (`drop0`, `bad`) | `prss_defs.thy:76` |
+| (★) append increases $o$ | `omap_snoc_increases` | `prss_mechanized.thy:106` |
+| §4.2 drop-zero decrease | `m_drop0_decreases` | `prss_mechanized.thy:161` |
+| §4.3 $o(\mathbf{B}^{k+1})=H((k{+}1)\cdot\lbrace o(\mathbf{B}_t)\rbrace)$ | `omap_rep` | `prss_mechanized.thy:204` |
+| §4.3 core decrease | `omap_core` | `prss_mechanized.thy:246` |
+| §4.3 with context $\mathbf{G}$ | `omap_BADCTX` | `prss_mechanized.thy:303` |
+| §4.3 bad-part decrease | `m_bad_decreases` | `prss_mechanized.thy:426` |
+| §5 step decreases $o$ | `m_step_decreases` | `prss_mechanized.thy:494` |
+| §5 termination | `m_termination`, `m_no_infinite_expansion` | `prss_mechanized.thy:506,515` |
 
 The statements live in `prss_paper.thy` (as `p_*`, kept `sorry`); the proofs are
 the `m_*` facts in `prss_mechanized.thy`. Build with `isbman build -d . -v PRSS`.
