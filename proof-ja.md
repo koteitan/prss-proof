@@ -2,197 +2,212 @@
 
 # バシク氏の原始数列システムの停止性
 
-バシク氏の*原始数列システム*が停止すること、すなわちあらゆる展開が有限で終わることを
-証明する。各自然数有限列に整礎順序の元——具体的には、再帰的に定めた多重集合順序を入れた
-有限木——を割り当て、展開の各ステップでこの元が真に減少することを示す。整礎性により無限
-展開は排除される。本論の議論は Isabelle/HOL で形式化されており、機械化された主張との対応は
-§6 に与える。展開は初等的であり、現れる対象はすべて具体的な有限構造で、順序数論の前提を
-必要としない。
+バシク氏の*原始数列システム*の停止性を証明する。各数列 $S \in \mathsf{list}(\mathbb{N})$ を
+整礎順序 $(\mathsf{hord}, \prec)$ の値 $o(S)$ に写し、展開の各ステップが $o$ を真に減少させる
+ことを示す。整礎性により無限展開は排除される。Isabelle/HOL で形式化している（対応は §7）。
+記法は Isabelle に従う：リスト $[]$、cons $a \mathbin{::} xs$、append $xs \mathbin{@} ys$、
+$\mathrm{last}$、$\mathrm{butlast}$、$\mathrm{take}\ r\ xs$、$\mathrm{drop}\ r\ xs$、
+$\mathrm{takeWhile}\ P\ xs$、$\mathrm{dropWhile}\ P\ xs$、$\mathrm{concat}$、
+$\mathrm{replicate}\ k\ x$、添字 $S \mathbin{!} p$。
 
-## 1. システム
+関係 $R$ が*整礎*とは、無限の下降列 $x_0\,R^{-1}\,x_1\,R^{-1}\,x_2\,\cdots$ が存在しないこと
+をいう。
 
-*数列*とは自然数の有限リスト $S = (S_0, S_1, \dots, S_{X-1})$ をいう。位置は $0$ から数え、
-$S_0$ を先頭、$X$ を長さとする。末尾の要素を `last S` $= S_{X-1}$、末尾を除いたリストを
-`butlast S` $= (S_0, \dots, S_{X-2})$ と書く。
+## 1. 展開ステップ
 
-システムは数列とカウンタ $n \in \mathbb{N}$ の組 $S[n]$ に作用し、固定の*活性化関数* $f$
-（バシク氏は $f(n) = n^2$）に依存する。1回の展開ステップは末尾要素による場合分けで定める。
+カウンタ $n \in \mathbb{N}$ と活性化関数 $f$（バシク氏は $f(n)=n^2$）に対し、
+$X = \mathrm{length}\ S$、$m = \mathrm{last}\ S$ とおくと、
 
-- $([])[n] = n$：空列はカウンタを返し、処理は停止する；
-- $S_{X-1} = 0$ のとき、末尾の $0$ を削除する：
-  $$S[n] \longrightarrow (S_0, \dots, S_{X-2})[f(n)];$$
-- $m := S_{X-1} > 0$ のとき、*bad root* を $S_p < m$ をみたす最大の位置 $p < X-1$ とし、
-  数列を*good part* $G = (S_0, \dots, S_{r-1})$ と *bad part* $B = (S_r, \dots, S_{X-2})$ に
-  分割して
-  $$S[n] \longrightarrow \big(G,\ \underbrace{B, B, \dots, B}_{f(n)+1 \text{ 個}}\big)[f(n)].$$
+$$\mathrm{expand}([][n]) = n, \qquad
+\mathrm{expand}(S[n]) =
+\begin{cases}
+\mathrm{expand}((\mathrm{butlast}\ S)[f(n)]) & m = 0,\\[2pt]
+\mathrm{expand}((G \mathbin{@} \underbrace{B \mathbin{@} \cdots \mathbin{@} B}_{f(n)+1})[f(n)]) & m > 0,
+\end{cases}$$
 
-カウンタ $n$ と関数 $f$ は $B$ の複製個数と返り値のみを定め、処理が停止するか否かには影響
-しない。したがって停止性は*数列部分*だけの性質であり、追加コピー数 $k = f(n)$ を任意の
-自然数としてよい。1ステップ（末尾 $0$ の削除、またはある $k$ による bad-part 複製）が $S$ を
-$T$ に送るとき $S \to T$ と書く。証明すべき定理は、無限連鎖
+$$r = \max\lbrace p \mid p < X-1 \ \wedge\ S \mathbin{!} p < m\rbrace, \qquad
+G = \mathrm{take}\ r\ S, \qquad
+B = \mathrm{drop}\ r\ (\mathrm{butlast}\ S).$$
 
-$$S^{(0)} \to S^{(1)} \to S^{(2)} \to \cdots$$
+**定義 1.1（ステップ関係, `step`）。** カウンタと $f$ を除き、コピー数 $k \in \mathbb{N}$ を
+任意とする。$S \to T$ を次の帰納規則で定める。
 
-が存在しないことである。
+$$\frac{S \neq []\quad m = 0}{S \to \mathrm{butlast}\ S}\ (\mathrm{drop0}),
+\qquad
+\frac{S \neq []\quad 0 < m \quad \mathrm{badset}\ S \neq \emptyset}
+{S \to (\mathrm{take}\ r\ S) \mathbin{@} \mathrm{concat}(\mathrm{replicate}\ (k+1)\ B)}\ (\mathrm{bad}),$$
 
-## 2. 値の順序
+$r = \mathrm{badroot}\ S$、$B = \mathrm{drop}\ r\ (\mathrm{butlast}\ S)$、
 
-数列に割り当てる測度は、多重集合順序を入れた有限木の集合に値をとる。まず多重集合を確認する。
+$$\mathrm{badset}\ S = \lbrace p \mid p < \mathrm{length}\ S - 1 \ \wedge\ S \mathbin{!} p < m\rbrace,
+\qquad \mathrm{badroot}\ S = \max(\mathrm{badset}\ S).$$
 
-集合上の*多重集合*とは、重複度は数えるが順序は無視する有限の集まりであり、
-$\lbrace 0, 0, 1\rbrace = \lbrace 0, 1, 0\rbrace \neq \lbrace 0, 1\rbrace$ である。多重集合
-の和（重複度の加法）を $\uplus$ と書き、$\lbrace 0\rbrace \uplus \lbrace 0, 1\rbrace =
-\lbrace 0, 0, 1\rbrace$ とする。
+任意の $f, n$ に対する $\mathrm{expand}$ の停止性は、無限連鎖 $S^{(0)} \to S^{(1)} \to \cdots$
+が存在しないことに帰着する。展開実行の数列部分はそのような連鎖だからである。
 
-**定義 2.1（値）。** *値*とは値の多重集合である。この再帰は空の多重集合を基底とする。子の
-多重集合が $M$ である値を $H(M)$ と書き、$\mathbf{0} := H(\lbrace\rbrace)$ とおく。同値に、
-値は有限木である：ノード $H(M)$ は $M$ の各要素ごとに1本の部分木を子にもち、重複を許す。
-Isabelle ではこれがデータ型 `datatype hord = H "hord multiset"` である。
+## 2. 多重集合
 
-**定義 2.2（順序）。** 値の順序を、子に適用した自分自身の順序の多重集合拡大で定める。値の
-多重集合 $M, N$ について、$N$ から1個の要素 $x$ を取り除き、$x$ より真に小さい要素を有限個
-（$0$ 個でもよい）付け加えて $M$ が得られるとき $M \prec_{\mathrm{ms}} N$ と書く。値については
+多重集合は集合に似ているが、重複を数え、順序を無視する。二重波括弧で書く。例えば
+$\lbrace\lbrace 1, 1, 4 \rbrace\rbrace$ は $1$ を2個、$4$ を1個もち、
+$\lbrace\lbrace 4, 1, 1 \rbrace\rbrace$ に等しく、$\lbrace\lbrace 1, 4 \rbrace\rbrace$（$1$ は
+1個）とは異なる。空のものは $\lbrace\lbrace\rbrace\rbrace$ である。
 
-$$H(M) \prec H(N) \iff M \prec_{\mathrm{ms}} N$$
+**定義 2.1（有限多重集合）。** 集合 $A$ 上の*多重集合*とは写像 $\mu : A \to \mathbb{N}$ で、
+$\mu(a)$ を $a$ の*重複度*という。非零の重複度が有限個のとき*有限*といい、
 
-と定める。比較される要素は常に子、すなわちより小さい木なので、この再帰は整合的に定まる。
+$$\mathcal{M}_{\mathrm{fin}}(A) = \lbrace \mu : A \to \mathbb{N} \ \mid\ \lvert \lbrace a \in A : \mu(a) > 0\rbrace \rvert < \infty \rbrace.$$
 
-**例 2.3.** $\mathbf{1} := H(\lbrace \mathbf{0}\rbrace)$、
-$\mathbf{2} := H(\lbrace \mathbf{0}, \mathbf{0}\rbrace)$、
-$\boldsymbol{\omega} := H(\lbrace \mathbf{1}\rbrace)$ とおくと
-$\mathbf{2} \prec \boldsymbol{\omega}$ である：$\boldsymbol{\omega}$ の子
-$\lbrace \mathbf{1}\rbrace$ から $\mathbf{1}$ を除き、$\mathbf{1}$ より小さい $\mathbf{0}$ を
-2個加えると $\lbrace \mathbf{0}, \mathbf{0}\rbrace$ が得られる。
+所属・空多重集合・単元多重集合・和 $\uplus$ は
 
-**命題 2.4（整礎性）。** 順序 $\prec$ は無限の真に減少する連鎖
-$v_0 \succ v_1 \succ v_2 \succ \cdots$ をもたない。同値に、値の空でない任意の集合は $\prec$
-について極小な元をもつ。
+$$a \in \mu \iff \mu(a) > 0, \qquad
+\lbrace\lbrace\rbrace\rbrace(a) = 0, \qquad
+\lbrace\lbrace x \rbrace\rbrace(a) = \begin{cases} 1 & a = x \\ 0 & a \neq x \end{cases}, \qquad
+(\mu \uplus \nu)(a) = \mu(a) + \nu(a).$$
 
-*証明.* 値に関する構造帰納法による。整礎順序の多重集合拡大が整礎であるという事実を用いる。
-これが定理 `wfP_hlt` であり、`HOL-Library.Multiset` のみの上で形式化されている。$\square$
+**定義 2.2（多重集合拡大, `multp`）。** $A$ 上の関係 $R$ に対し、
+$\mathcal{M}_{\mathrm{fin}}(A)$ 上の関係 $\mathrm{multp}\ R$ を、$(M, N)$ について
 
-**注意 2.5.** $H(M)$ を順序数 $\omega^{a_1} \oplus \cdots \oplus \omega^{a_k}$（$a_1, \dots,
-a_k$ は子、$\oplus$ は自然和）と読めば、値は $\varepsilon_0$ 未満の順序数全体と、$\prec$ は
-順序数の順序と同一視される。以下ではこの読み方は用いない。
+$$\exists I, J, K.\ \ N = I \uplus J \ \wedge\ M = I \uplus K \ \wedge\ J \neq \lbrace\lbrace\rbrace\rbrace \ \wedge\ (\forall k \in K.\ \exists j \in J.\ R(k, j))$$
 
-## 3. 数列上の測度
+のとき成り立つと定める。すなわち $M$ は $N$ から空でない部分多重集合 $J$ を除き、$J$ の
+いずれかの元より $R$-小な元からなる $K$ を加えて得られる。
 
-各数列 $S$ に値 $o(S)$ を割り当てる。
+**命題 2.3（`wfp_multp`）。** $R$ が整礎ならば $\mathrm{multp}\ R$ も整礎である。
 
-**定義 3.1（数列の森）。** $S$ の位置 $i$ に対し、その*親*を $S_j < S_i$ をみたす最大の
-$j < i$ とし、直前に小さい要素がなければ $i$ を*根*とする。（これは bad root を定める規則
-そのものであり、ステップが末尾要素を削除するとき、その親が bad root になる。）親関係により
-$S$ は森として表される。
+これはライブラリの事実（`HOL-Library.Multiset`）であり、本証明が定義以外に必要とする
+多重集合の唯一の性質である。
 
-例えば `(0,1,2,0,1)` は2本の木からなる森である。
+## 3. 値の順序 $(\mathsf{hord}, \prec)$
 
-```
-  位置:  0  1  2  3  4              0 (位置0)        0 (位置3)
-  要素:  0  1  2  0  1              └ 1 (位置1)      └ 1 (位置4)
-                                      └ 2 (位置2)
-```
+**定義 3.1（値, `hord`）。** $\mathsf{hord}$ を次をみたす最小の集合とする。
 
-**定義 3.2（測度 $o$）。** 各木に値 $H(\text{子たち})$ を与え、森の木たちを $\uplus$ で
-合わせる。左から読めばこれは次の再帰である。
+$$M \in \mathcal{M}_{\mathrm{fin}}(\mathsf{hord}) \implies H(M) \in \mathsf{hord}.$$
 
-$$o([]) = H(\lbrace\rbrace), \qquad
-  o(a \# \mathit{rest}) = H\big(\ \lbrace o(\mathit{inside})\rbrace \ \uplus\ C\ \big),$$
+$H$ は構成子である。$\mathbf{0} = H(\lbrace\lbrace\rbrace\rbrace)$ とおく。各値は一意の $M$ に
+ついて $H(M)$ に等しく、$M$ の各要素を*子*と呼ぶ。
 
-ここで $\mathit{inside}$ は $\mathit{rest}$ の先頭からの、要素がすべて $a$ を超える最長の
-部分（先頭ノードの子孫）、$\mathit{outside}$ は残りの接尾辞、$C$ は $o(\mathit{outside})$ の
-子の多重集合（すなわち $o(\mathit{outside}) = H(C)$）である。これが Isabelle の関数
-`omap` である。
+**定義 3.2（順序, `hlt`）。** $\mathsf{hord}$ 上で
 
-この測度は Isabelle で検証された次の値をとる：$o(0) = \mathbf{1}$、$k$ 個の $0$ の列の値は
-$\mathbf{k}$、$o(0,1) = \boldsymbol{\omega}$、$o(0,1,1) = \boldsymbol{\omega}^2$、
-$o(0,1,2) = \boldsymbol{\omega}^{\boldsymbol{\omega}}$（順序数表記は注意 2.5 による。各々は
-具体的には有限木である）。
+$$H(M) \prec H(N) \iff \mathrm{multp}\ (\prec)\ M\ N.$$
 
-## 4. 各ステップは測度を減少させる
+（$\mathrm{multp}\ (\prec)$ が比較する元は子、すなわちより小さい値なので、この再帰は整合的に
+定まる。）
 
-$S \to T$ のとき $o(T) \prec o(S)$ を示す。補助的な単調性補題ののち、2つの場合を扱う。
+**命題 3.3（`wfP_hlt`）。** $\prec$ は整礎である。
 
-**補題 4.1（`omap_snoc_increases`）。** 任意の数列 $C$ と任意の $m$ について
-$$o(C) \prec o(C, m).$$
+*証明.* $\mathsf{hord}$ に関する構造帰納法。帰納段で命題 2.3 を用いる。$\square$
 
-*証明.* 末尾に要素を加えると森にノードが1つ増える：新しい根となってトップレベルの子
-$\mathbf{0}$ が1つ増えるか、既存ノードの子孫が1つ増えてそのノードが大きくなるかのいずれか
-である。どちらでも値は真に増加する。形式的証明は $o$ の再帰に沿う帰納法による。$\square$
+**例 3.4.** $\mathbf{1} = H(\lbrace\lbrace \mathbf{0} \rbrace\rbrace)$、
+$\mathbf{2} = H(\lbrace\lbrace \mathbf{0}, \mathbf{0} \rbrace\rbrace)$、
+$\boldsymbol{\omega} = H(\lbrace\lbrace \mathbf{1} \rbrace\rbrace)$ とおくと、$I = \lbrace\lbrace\rbrace\rbrace$、
+$J = \lbrace\lbrace \mathbf{1} \rbrace\rbrace$、$K = \lbrace\lbrace \mathbf{0}, \mathbf{0} \rbrace\rbrace$ により
+$\mathbf{2} \prec \boldsymbol{\omega}$。
 
-**命題 4.2（末尾 $0$ の削除, `m_drop0_decreases`）。** $S$ が空でなく `last S` $= 0$ ならば
-$o(\texttt{butlast } S) \prec o(S)$。
+**注意 3.5.** $H(\lbrace\lbrace a_1, \dots, a_k \rbrace\rbrace) \mapsto \omega^{a_1} \oplus \cdots \oplus
+\omega^{a_k}$（自然和）により $(\mathsf{hord}, \prec) \cong (\varepsilon_0, <)$。以下では
+用いない。
 
-*証明.* 末尾の $0$ はどの要素より小さいので根であり、最後尾なので子孫をもたない孤立した葉
-である。よって $o(S)$ は $o(\texttt{butlast } S)$ にトップレベルの子 $\mathbf{0}$ を1つ加えた
-もので、多重集合から1要素を削除するのは $\prec_{\mathrm{ms}}$ の減少である。$\square$
+## 4. 測度 $o$ (`omap`)
 
-次に bad-part のステップ
-$S = (G, B, m) \to (G, \underbrace{B, \dots, B}_{k+1})$ を扱う。ここで $m =$ `last S` $> 0$、
-$B = (v, B_t)$ で $v = S_r$ は bad root $r$ の要素である。$r$ は要素が $m$ 未満となる*最後の*
-前方位置なので、$B_t$ の各要素は $m$ 以上、したがって $v$ を超える。
+**定義 4.1（`omap`）。** $\mathit{tw} = \mathrm{takeWhile}\ (\lambda x.\ a < x)\ \mathit{rest}$、
+$\mathit{dw} = \mathrm{dropWhile}\ (\lambda x.\ a < x)\ \mathit{rest}$ とし、
+$o(\mathit{dw}) = H(D)$ と書くと、
 
-**補題 4.3（`omap_rep`, `omap_BfM`, `omap_core`）。** これらの仮定の下で
-$$o\big(\underbrace{B, \dots, B}_{k+1}\big) \prec o(B, m).$$
+$$o([]) = H(\lbrace\lbrace\rbrace\rbrace), \qquad
+o(a \mathbin{::} \mathit{rest}) = H\big(\lbrace\lbrace o(\mathit{tw}) \rbrace\rbrace \uplus D\big).$$
 
-*証明.* $B = (v, B_t)$ の $k+1$ 個のコピーは隣り合う $k+1$ 本の木をなし、各々根 $v$ で子孫の
-森が $B_t$ である。ゆえに（補題 `omap_rep`）
-$$o\big(\underbrace{B, \dots, B}_{k+1}\big) = H\big(\underbrace{o(B_t), \dots, o(B_t)}_{k+1}\big).$$
-$(B, m) = (v, B_t, m)$ では末尾の $m$ は $v$ および $B_t$ の各要素を超えるので、その親は $v$ で
-あり、唯一の根 $v$ の子孫が1つ増える。ゆえに（補題 `omap_BfM`）
-$$o(B, m) = H\big(\lbrace o(B_t, m)\rbrace\big).$$
-右辺の多重集合は元 $o(B_t, m)$ を1個もち、左辺は $o(B_t)$ を $k+1$ 個もつ。補題 4.1 により
-$o(B_t) \prec o(B_t, m)$ なので、1個の元を真に小さい有限個の元で置き換えることは、定義により
-$\prec_{\mathrm{ms}}$ の減少である。$\square$
+同値に $o$ は*森の値*である：位置 $i$ の親は
+$\max\lbrace j \mid j < i \wedge S \mathbin{!} j < S \mathbin{!} i\rbrace$（無ければ根）、各木は
+$H(\text{子たち})$ を与え、森は $\uplus$ で合わせる。この親の規則は bad root と一致する。
 
-**補題 4.4（`omap_BADCTX`）。** 任意の good part $G$ について
-$$o\big(G, \underbrace{B, \dots, B}_{k+1}\big) \prec o(G, B, m).$$
+**計算値**（Isabelle）：$o([0]) = H(\lbrace\lbrace \mathbf{0} \rbrace\rbrace) = \mathbf{1}$；
+$o(\underbrace{[0, \dots, 0]}_{k}) = \mathbf{k}$；$o([0,1]) = \boldsymbol{\omega}$；
+$o([0,1,1]) = \boldsymbol{\omega}^2$；$o([0,1,2]) = \boldsymbol{\omega}^{\boldsymbol{\omega}}$。
 
-*証明.* $G$ の長さに関する帰納法による。先頭要素 $g$ を除くと、$o$ の再帰は比較を $G$ の内部
-に閉じ込めて、両辺で同一の周辺文脈をもつより短い good part に帰着させるか、あるいは $g$ が
-bad part より下に来た時点で補題 4.3 に帰着させる。基底（$G$ が空）は補題 4.3 そのものである。
-$\square$
+## 5. 各ステップは $o$ を減少させる
 
-**命題 4.5（bad-part ステップ, `m_bad_decreases`）。** $S$ が空でなく `last S` $> 0$ で
-bad root が存在するならば、任意の $k$ について
-$o\big(G, \underbrace{B, \dots, B}_{k+1}\big) \prec o(S)$。
+**補題 5.1（`omap_snoc_increases`）。** $\quad o(C) \prec o(C \mathbin{@} [m]).$
 
-*証明.* bad root の候補位置は有限集合をなし、到達しうる数列では $S_0 = 0 < m$ ゆえ空でないので
-bad root はちゃんと定まる。主張は補題 4.4 である。$\square$
+*証明.* $o$ の再帰に沿う帰納法。末尾に $m$ を加えると、トップレベルの子 $\mathbf{0}$ が増えるか、
+ある子が大きくなるかのいずれかで、どちらも $\prec$-増加。$\square$
 
-## 5. 停止性
+**命題 5.2（`m_drop0_decreases`）。** $\quad S \neq [] \ \wedge\ \mathrm{last}\ S = 0 \implies
+o(\mathrm{butlast}\ S) \prec o(S).$
 
-**定理 5.1（`m_step_decreases`）。** $S \to T$ ならば $o(T) \prec o(S)$。
+*証明.* $o(\mathrm{butlast}\ S) = H(D)$ と書く。`omap_snoc0` により
+$$o(S) = o((\mathrm{butlast}\ S) \mathbin{@} [0]) = H(\lbrace\lbrace \mathbf{0} \rbrace\rbrace \uplus D),$$
+1元 $\mathbf{0}$ の削除は $\mathrm{multp}$-ステップ。$\square$
 
-*証明.* 2つの場合は命題 4.2 と 4.5 である。$\square$
+bad ステップでは $r = \mathrm{badroot}\ S$、$v = S \mathbin{!} r$、$m = \mathrm{last}\ S$、
+$B = \mathrm{drop}\ r\ (\mathrm{butlast}\ S)$ とおく。すると $B = v \mathbin{::} B_t$ で
+$\forall x \in B_t.\ v < x$（実際 $m \le x$）、かつ
+$S = (\mathrm{take}\ r\ S) \mathbin{@} (v \mathbin{::} B_t) \mathbin{@} [m]$。
 
-**定理 5.2（停止性, `m_termination`）。** 無限連鎖 $S^{(0)} \to S^{(1)} \to \cdots$ は
-存在しない。同値に（`m_no_infinite_expansion`）あらゆる展開は有限である。
+**補題 5.3（`omap_rep`）。** $\ \forall x \in B_t.\ v < x \implies$
+$$o(\mathrm{concat}(\mathrm{replicate}\ k\ (v \mathbin{::} B_t))) = H\big(\underbrace{\lbrace\lbrace o(B_t), \dots, o(B_t) \rbrace\rbrace}_{k}\big).$$
 
-*証明.* 無限連鎖があれば、定理 5.1 により値の無限に真に減少する連鎖
-$o(S^{(0)}) \succ o(S^{(1)}) \succ \cdots$ が生じ、命題 2.4 に反する。$\square$
+**補題 5.4（`omap_BfM`）。** $\ \forall x \in B_t.\ v < x,\ \ v < m \implies$
+$$o((v \mathbin{::} B_t) \mathbin{@} [m]) = H(\lbrace\lbrace o(B_t \mathbin{@} [m]) \rbrace\rbrace).$$
 
-## 6. Isabelle 形式化との対応
+**補題 5.5（`omap_core`）。** $\ \forall x \in B_t.\ v < x,\ \ v < m \implies$
+$$o(\mathrm{concat}(\mathrm{replicate}\ (k{+}1)\ (v \mathbin{::} B_t))) \prec o((v \mathbin{::} B_t) \mathbin{@} [m]).$$
 
-ステートメントは `prss_paper.thy`（接頭辞 `p_`、`sorry` のまま）に転記され、
-`prss_mechanized.thy` の `m_*` で解消される。セッションは `isbman build -d . -v PRSS` で
-ビルドする。
+*証明.* 補題 5.3 より左辺は $H(\underbrace{\lbrace\lbrace o(B_t), \dots, o(B_t) \rbrace\rbrace}_{k+1})$、
+補題 5.4 より右辺は $H(\lbrace\lbrace o(B_t \mathbin{@} [m]) \rbrace\rbrace)$。$o(B_t) \prec o(B_t \mathbin{@} [m])$
+（補題 5.1）なので、1元を真に小さい $k{+}1$ 元で置き換える $\mathrm{multp}$-ステップ。$\square$
+
+**補題 5.6（`omap_BADCTX`）。** $B_t$ への仮定の下、任意の $G$ について
+$$o(G \mathbin{@} \mathrm{concat}(\mathrm{replicate}\ (k{+}1)\ (v \mathbin{::} B_t))) \prec o(G \mathbin{@} (v \mathbin{::} B_t) \mathbin{@} [m]).$$
+
+*証明.* $\mathrm{length}\ G$ に関する帰納法。$G = g \mathbin{::} G'$ を剥がすと、$o$ の再帰は
+$G' \mathbin{@} (\cdots)$ を $g$ における $\mathrm{takeWhile} / \mathrm{dropWhile}$ で分割する：
+より短い文脈に帰着する（$H$ 下の合同）か、$g$ が bad part より下に来た時点で補題 5.5 に
+帰着する。基底 $G = []$ が補題 5.5。$\square$
+
+**命題 5.7（`m_bad_decreases`）。** $\ S \neq [] \ \wedge\ 0 < \mathrm{last}\ S \ \wedge\
+\mathrm{badset}\ S \neq \emptyset \implies$
+$$o((\mathrm{take}\ r\ S) \mathbin{@} \mathrm{concat}(\mathrm{replicate}\ (k{+}1)\ (\mathrm{drop}\ r\ (\mathrm{butlast}\ S)))) \prec o(S).$$
+
+*証明.* $\mathrm{badset}\ S$ は有限かつ非空なので $r$ は定まる。
+$S = (\mathrm{take}\ r\ S) \mathbin{@} (v \mathbin{::} B_t) \mathbin{@} [m]$ と書き換えれば補題 5.6 に帰着。$\square$
+
+## 6. 停止性
+
+**定理 6.1（`m_step_decreases`）。** $\quad S \to T \implies o(T) \prec o(S).$
+
+*証明.* drop0 / bad の場合は命題 5.2 / 5.7。$\square$
+
+**定理 6.2（`m_termination`）。** $\quad \mathrm{wf}\ \lbrace (T, S) \mid S \to T\rbrace.$
+同値に（`m_no_infinite_expansion`）、すべての $i$ で $\mathrm{Seq}(i) \to \mathrm{Seq}(i{+}1)$ と
+なる $\mathrm{Seq}$ は存在しない。
+
+*証明.* 定理 6.1 より $\lbrace (T, S) \mid S \to T\rbrace \subseteq o^{-1}(\prec)$、命題 3.3 より
+$o^{-1}(\prec)$ は整礎（整礎関係の逆像）。$\square$
+
+## 7. Isabelle 形式化との対応
+
+ステートメント：`prss_paper.thy`（`p_*`、`sorry`）、証明：`prss_mechanized.thy` の `m_*`。
+ビルド：`isbman build -d . -v PRSS`。
 
 | 対象 | Isabelle | ソース |
 |---|---|---|
-| 値 $H(M)$ | `datatype hord = H "hord multiset"` | [prss_ordinal.thy:16](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L16) |
-| 順序 $\prec$ | `hlt` | [prss_ordinal.thy:20](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L20) |
-| 命題 2.4 | `wfP_hlt` | [prss_ordinal.thy:199](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L199) |
-| 数列 | `nat list` | [prss_defs.thy](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy) |
-| 測度 $o$（定義 3.2） | `omap` | [prss_defs.thy:40](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L40) |
-| bad root（定義 3.1） | `badset` / `badroot` | [prss_defs.thy:67](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L67), [70](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L70) |
-| ステップ $S \to T$ | `step`（`drop0`, `bad`） | [prss_defs.thy:76](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L76) |
-| 補題 4.1 | `omap_snoc_increases` | [prss_mechanized.thy:106](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L106) |
-| 命題 4.2 | `m_drop0_decreases` | [prss_mechanized.thy:161](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L161) |
-| 補題 4.3 | `omap_rep`, `omap_BfM`, `omap_core` | [prss_mechanized.thy:204](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L204) |
-| 補題 4.4 | `omap_BADCTX` | [prss_mechanized.thy:303](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L303) |
-| 命題 4.5 | `m_bad_decreases` | [prss_mechanized.thy:426](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L426) |
-| 定理 5.1 | `m_step_decreases` | [prss_mechanized.thy:494](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L494) |
-| 定理 5.2 | `m_termination`, `m_no_infinite_expansion` | [prss_mechanized.thy:506](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L506), [515](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L515) |
+| $\mathrm{multp}$（定義 2.2） | `multp` | `HOL-Library.Multiset` |
+| 命題 2.3 | `wfp_multp` | `HOL-Library.Multiset` |
+| $\mathsf{hord}$, $H$ | `datatype hord = H "hord multiset"` | [prss_ordinal.thy:16](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L16) |
+| $\prec$ | `hlt` | [prss_ordinal.thy:20](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L20) |
+| 命題 3.3 | `wfP_hlt` | [prss_ordinal.thy:199](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L199) |
+| $o$（定義 4.1） | `omap` | [prss_defs.thy:40](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L40) |
+| $\mathrm{badset}$ / $\mathrm{badroot}$ | `badset` / `badroot` | [prss_defs.thy:67](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L67), [70](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L70) |
+| $\to$（定義 1.1） | `step`（`drop0`, `bad`） | [prss_defs.thy:76](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L76) |
+| 補題 5.1 | `omap_snoc_increases` | [prss_mechanized.thy:106](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L106) |
+| 命題 5.2 | `m_drop0_decreases` | [prss_mechanized.thy:161](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L161) |
+| 補題 5.3 | `omap_rep` | [prss_mechanized.thy:204](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L204) |
+| 補題 5.4 | `omap_BfM` | [prss_mechanized.thy:228](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L228) |
+| 補題 5.5 | `omap_core` | [prss_mechanized.thy:246](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L246) |
+| 補題 5.6 | `omap_BADCTX` | [prss_mechanized.thy:303](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L303) |
+| 命題 5.7 | `m_bad_decreases` | [prss_mechanized.thy:426](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L426) |
+| 定理 6.1 | `m_step_decreases` | [prss_mechanized.thy:494](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L494) |
+| 定理 6.2 | `m_termination`, `m_no_infinite_expansion` | [prss_mechanized.thy:506](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L506), [515](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L515) |
 
 ---
 

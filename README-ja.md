@@ -2,7 +2,7 @@
 
 # prss-proof
 
-Version: **v0.1.8**
+Version: **v0.1.9**
 
 バシク氏の **原始数列システム（Primitive Sequence System）** が必ず停止する
 ことを、**Isabelle/HOL** で機械的に検証したものです。
@@ -11,8 +11,8 @@ Version: **v0.1.8**
 ステップでその順序数が真に減少することを示します。$\varepsilon_0$ 未満の順序数は
 整礎なので、無限に展開が続くことはありません。
 
-数式での証明は [proof-ja.md](proof-ja.md)（[`index-ja.html`](index-ja.html) /
-英語 [`proof.html`](proof.html) もあり、MathJax・ダークモード）を参照してください。
+数式での証明は [proof-ja.md](proof-ja.md)（英語版は [proof.md](proof.md)）を
+参照してください。
 
 ## 証明した内容
 
@@ -28,7 +28,7 @@ Version: **v0.1.8**
 | `prss_defs.thy` | 原始数列、`expand` の1ステップ関係 `step`、bad root、森の順序数写像 `omap`。 |
 | `prss_paper.thy` | 命題・主定理のステートメント（すべて `sorry`）。 |
 | `prss_mechanized.thy` | それらを解消する機械化証明。 |
-| [`proof-ja.md`](proof-ja.md) | 人間向けの数式証明（`index-ja.html` もあり）。 |
+| [`proof-ja.md`](proof-ja.md) | 人間向けの数式証明。 |
 
 命名規則：論文側の主張は `p_*`、機械化証明は `m_*`。
 

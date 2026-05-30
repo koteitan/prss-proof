@@ -2,227 +2,229 @@
 
 # Termination of Bashicu's Primitive Sequence System
 
-We prove that Bashicu's *Primitive Sequence System* terminates: every expansion
-is finite. To each finite sequence of natural numbers we assign an element of a
-well-founded order — concretely, a finite tree ordered by a recursively defined
-multiset order — and we show that every expansion step strictly decreases this
-element. Well-foundedness then excludes any infinite expansion. The argument is
-formalised in Isabelle/HOL; the correspondence with the mechanised statements is
-given in §6. The development is elementary: every object is a concrete finite
-structure, and no prior theory of ordinals is assumed.
+We prove termination of Bashicu's *Primitive Sequence System*. Each sequence
+$S \in \mathsf{list}(\mathbb{N})$ is mapped to a value $o(S)$ in a well-founded
+order $(\mathsf{hord}, \prec)$, and each expansion step strictly decreases $o$;
+well-foundedness then forbids any infinite expansion. The argument is formalised
+in Isabelle/HOL (correspondence in §7). Notation follows Isabelle: lists $[]$,
+cons $a \mathbin{::} xs$, append $xs \mathbin{@} ys$, $\mathrm{last}$,
+$\mathrm{butlast}$, $\mathrm{take}\ r\ xs$, $\mathrm{drop}\ r\ xs$,
+$\mathrm{takeWhile}\ P\ xs$, $\mathrm{dropWhile}\ P\ xs$, $\mathrm{concat}$,
+$\mathrm{replicate}\ k\ x$, indexing $S \mathbin{!} p$.
 
-## 1. The system
+A relation $R$ is *well-founded* when there is no infinite chain
+$x_0\,R^{-1}\,x_1\,R^{-1}\,x_2\,\cdots$ (no infinite descent).
 
-A *sequence* is a finite list of natural numbers $S = (S_0, S_1, \dots, S_{X-1})$;
-positions are counted from $0$, so $S_0$ is the first entry and $X$ the length.
-We write `last S` $= S_{X-1}$ for the final entry and `butlast S`
-$= (S_0, \dots, S_{X-2})$ for the list with its final entry removed.
+## 1. The expansion step
 
-The system acts on a sequence paired with a counter $n \in \mathbb{N}$, written
-$S[n]$, relative to a fixed *activation function* $f$ (Bashicu takes
-$f(n) = n^2$). One expansion step is defined by cases on the final entry:
+For a counter $n \in \mathbb{N}$ and activation function $f$ (Bashicu:
+$f(n)=n^2$), with $X = \mathrm{length}\ S$ and $m = \mathrm{last}\ S$,
 
-- $([])[n] = n$: the empty sequence returns the counter, and the process halts;
-- if $S_{X-1} = 0$, the final $0$ is deleted:
-  $$S[n] \longrightarrow (S_0, \dots, S_{X-2})[f(n)];$$
-- if $m := S_{X-1} > 0$, let the *bad root* be the largest position $p < X-1$
-  with $S_p < m$, and split the sequence into the *good part*
-  $G = (S_0, \dots, S_{r-1})$ and the *bad part* $B = (S_r, \dots, S_{X-2})$;
-  then
-  $$S[n] \longrightarrow \big(G,\ \underbrace{B, B, \dots, B}_{f(n)+1 \text{ copies}}\big)[f(n)].$$
+$$\mathrm{expand}([][n]) = n, \qquad
+\mathrm{expand}(S[n]) =
+\begin{cases}
+\mathrm{expand}((\mathrm{butlast}\ S)[f(n)]) & m = 0,\\[2pt]
+\mathrm{expand}((G \mathbin{@} \underbrace{B \mathbin{@} \cdots \mathbin{@} B}_{f(n)+1})[f(n)]) & m > 0,
+\end{cases}$$
 
-The counter $n$ and the function $f$ determine only the number of copies of $B$
-and the returned value; they do not affect whether the process halts.
-Termination is therefore a property of the *sequence part* alone, with the number
-of additional copies $k = f(n)$ left as an arbitrary natural number. Write
-$S \to T$ when one step (deletion of a final $0$, or a bad-part copy for some
-$k$) sends $S$ to $T$. The theorem to be proved is that there is no infinite
-chain
+$$r = \max\lbrace p \mid p < X-1 \ \wedge\ S \mathbin{!} p < m\rbrace, \qquad
+G = \mathrm{take}\ r\ S, \qquad
+B = \mathrm{drop}\ r\ (\mathrm{butlast}\ S).$$
 
-$$S^{(0)} \to S^{(1)} \to S^{(2)} \to \cdots.$$
+**Definition 1.1 (step relation, `step`).** Drop the counter and $f$, and let the
+copy count $k \in \mathbb{N}$ be arbitrary. Define $S \to T$ inductively by
 
-## 2. The order of values
+$$\frac{S \neq []\quad m = 0}{S \to \mathrm{butlast}\ S}\ (\mathrm{drop0}),
+\qquad
+\frac{S \neq []\quad 0 < m \quad \mathrm{badset}\ S \neq \emptyset}
+{S \to (\mathrm{take}\ r\ S) \mathbin{@} \mathrm{concat}(\mathrm{replicate}\ (k+1)\ B)}\ (\mathrm{bad}),$$
 
-The measure assigned to sequences takes values in a set of finite trees, ordered
-by a multiset order. We first recall multisets.
+with $r = \mathrm{badroot}\ S$, $B = \mathrm{drop}\ r\ (\mathrm{butlast}\ S)$ and
 
-A *multiset* over a set is a finite collection in which multiplicity is counted
-but order is disregarded; thus $\lbrace 0, 0, 1\rbrace = \lbrace 0, 1, 0\rbrace
-\neq \lbrace 0, 1\rbrace$. We write $\uplus$ for multiset sum (addition of
-multiplicities), so $\lbrace 0\rbrace \uplus \lbrace 0, 1\rbrace = \lbrace 0, 0,
-1\rbrace$.
+$$\mathrm{badset}\ S = \lbrace p \mid p < \mathrm{length}\ S - 1 \ \wedge\ S \mathbin{!} p < m\rbrace,
+\qquad \mathrm{badroot}\ S = \max(\mathrm{badset}\ S).$$
 
-**Definition 2.1 (value).** A *value* is a multiset of values. The recursion is
-grounded at the empty multiset; we write $H(M)$ for the value with multiset of
-children $M$, and put $\mathbf{0} := H(\lbrace\rbrace)$. Equivalently, a value is
-a finite tree: the node $H(M)$ has one child subtree for each element of $M$,
-with repetitions permitted. In Isabelle this is the datatype
-`datatype hord = H "hord multiset"`.
+Termination of $\mathrm{expand}$ for any $f, n$ reduces to nonexistence of an
+infinite chain $S^{(0)} \to S^{(1)} \to \cdots$, since the sequence part of any
+expansion run is such a chain.
 
-**Definition 2.2 (order).** Values are ordered by the multiset extension of their
-own order, applied to children. For multisets $M, N$ of values, write
-$M \prec_{\mathrm{ms}} N$ if $M$ is obtained from $N$ by removing one element $x$
-and adjoining finitely many elements, each strictly smaller than $x$ (adjoining
-none is permitted). For values, set
+## 2. Multisets
 
-$$H(M) \prec H(N) \iff M \prec_{\mathrm{ms}} N.$$
+A multiset is like a set but counts repetitions and ignores order; we write it
+with double braces. For example $\lbrace\lbrace 1, 1, 4 \rbrace\rbrace$ has two
+$1$'s and one $4$, equals $\lbrace\lbrace 4, 1, 1 \rbrace\rbrace$, and differs
+from $\lbrace\lbrace 1, 4 \rbrace\rbrace$ (one $1$). The empty one is
+$\lbrace\lbrace\rbrace\rbrace$.
 
-The elements compared are children, hence strictly smaller trees, so the
-recursion is well defined.
+**Definition 2.1 (finite multisets).** A *multiset* over a set $A$ is a map
+$\mu : A \to \mathbb{N}$, with $\mu(a)$ the *multiplicity* of $a$. It is *finite*
+when only finitely many multiplicities are nonzero:
 
-**Example 2.3.** With $\mathbf{1} := H(\lbrace \mathbf{0}\rbrace)$,
-$\mathbf{2} := H(\lbrace \mathbf{0}, \mathbf{0}\rbrace)$ and
-$\boldsymbol{\omega} := H(\lbrace \mathbf{1}\rbrace)$ one has
-$\mathbf{2} \prec \boldsymbol{\omega}$: from the children $\lbrace
-\mathbf{1}\rbrace$ of $\boldsymbol{\omega}$, remove $\mathbf{1}$ and adjoin two
-copies of $\mathbf{0}$ (each below $\mathbf{1}$) to obtain $\lbrace \mathbf{0},
-\mathbf{0}\rbrace$.
+$$\mathcal{M}_{\mathrm{fin}}(A) = \lbrace \mu : A \to \mathbb{N} \ \mid\ \lvert \lbrace a \in A : \mu(a) > 0\rbrace \rvert < \infty \rbrace.$$
 
-**Proposition 2.4 (well-foundedness).** The order $\prec$ admits no infinite
-strictly decreasing chain $v_0 \succ v_1 \succ v_2 \succ \cdots$; equivalently,
-every non-empty set of values has a $\prec$-minimal element.
+Membership, the empty and singleton multisets, and the sum $\uplus$ are
 
-*Proof.* By structural induction on values, using the fact that the multiset
-extension of a well-founded order is well-founded. This is the theorem `wfP_hlt`,
-formalised over `HOL-Library.Multiset` alone. $\square$
+$$a \in \mu \iff \mu(a) > 0, \qquad
+\lbrace\lbrace\rbrace\rbrace(a) = 0, \qquad
+\lbrace\lbrace x \rbrace\rbrace(a) = \begin{cases} 1 & a = x \\ 0 & a \neq x \end{cases}, \qquad
+(\mu \uplus \nu)(a) = \mu(a) + \nu(a).$$
 
-**Remark 2.5.** Reading $H(M)$ as the ordinal $\omega^{a_1} \oplus \cdots \oplus
-\omega^{a_k}$, where $a_1, \dots, a_k$ are the children and $\oplus$ is the
-natural sum, identifies the values with the ordinals below $\varepsilon_0$ and
-$\prec$ with the ordinal order. This reading is not used below.
+**Definition 2.2 (multiset extension, `multp`).** For a relation $R$ on $A$, the
+relation $\mathrm{multp}\ R$ on $\mathcal{M}_{\mathrm{fin}}(A)$ relates $(M, N)$
+iff
 
-## 3. The measure on sequences
+$$\exists I, J, K.\ \ N = I \uplus J \ \wedge\ M = I \uplus K \ \wedge\ J \neq \lbrace\lbrace\rbrace\rbrace \ \wedge\ (\forall k \in K.\ \exists j \in J.\ R(k, j)).$$
 
-To each sequence $S$ we attach a value $o(S)$.
+That is: $M$ arises from $N$ by removing a nonempty sub-multiset $J$ and inserting
+$K$, every element of which is $R$-below some element of $J$.
 
-**Definition 3.1 (forest of a sequence).** For a position $i$ of $S$, its
-*parent* is the largest $j < i$ with $S_j < S_i$; if no earlier entry is smaller,
-$i$ is a *root*. (This is the rule defining the bad root: when a step deletes the
-final entry, its parent is the bad root.) The parent relation presents $S$ as a
-forest.
+**Proposition 2.3 (`wfp_multp`).** If $R$ is well-founded then so is
+$\mathrm{multp}\ R$.
 
-For instance `(0,1,2,0,1)` is the forest of two trees
+This is a library fact (`HOL-Library.Multiset`); it is the only property of
+multisets the proof needs beyond the definitions.
 
-```
-  position:  0  1  2  3  4            0 (pos 0)        0 (pos 3)
-  entry:     0  1  2  0  1            └ 1 (pos 1)      └ 1 (pos 4)
-                                        └ 2 (pos 2)
-```
+## 3. The value order $(\mathsf{hord}, \prec)$
 
-**Definition 3.2 (the measure $o$).** Assign to each tree the value
-$H(\text{children})$ and combine the trees of a forest by $\uplus$. Read from the
-left, this is the recursion
+**Definition 3.1 (values, `hord`).** $\mathsf{hord}$ is the least set with
 
-$$o([]) = H(\lbrace\rbrace), \qquad
-  o(a \# \mathit{rest}) = H\big(\ \lbrace o(\mathit{inside})\rbrace \ \uplus\ C\ \big),$$
+$$M \in \mathcal{M}_{\mathrm{fin}}(\mathsf{hord}) \implies H(M) \in \mathsf{hord},$$
 
-where $\mathit{inside}$ is the longest prefix of $\mathit{rest}$ all of whose
-entries exceed $a$ (the descendants of the first node), $\mathit{outside}$ is the
-remaining suffix, and $C$ is the multiset of children of $o(\mathit{outside})$
-(that is, $o(\mathit{outside}) = H(C)$). This is the Isabelle function `omap`.
+where $H$ is the constructor. Put $\mathbf{0} = H(\lbrace\lbrace\rbrace\rbrace)$.
+Each value equals $H(M)$ for a unique $M$; its elements are the *children*.
 
-The measure takes the following values, verified in Isabelle:
-$o(0) = \mathbf{1}$, a run of $k$ zeros has value $\mathbf{k}$, $o(0,1) =
-\boldsymbol{\omega}$, $o(0,1,1) = \boldsymbol{\omega}^2$, and $o(0,1,2) =
-\boldsymbol{\omega}^{\boldsymbol{\omega}}$ (the displayed ordinals are by
-Remark 2.5; each is concretely a finite tree).
+**Definition 3.2 (order, `hlt`).** On $\mathsf{hord}$,
 
-## 4. Each step decreases the measure
+$$H(M) \prec H(N) \iff \mathrm{multp}\ (\prec)\ M\ N.$$
 
-We prove $o(T) \prec o(S)$ whenever $S \to T$, treating the two cases separately
-after an auxiliary monotonicity lemma.
+(The elements compared by $\mathrm{multp}\ (\prec)$ are children, hence strictly
+smaller values, so the recursion is well defined.)
 
-**Lemma 4.1 (`omap_snoc_increases`).** For every sequence $C$ and every $m$,
-$$o(C) \prec o(C, m).$$
+**Proposition 3.3 (`wfP_hlt`).** $\prec$ is well-founded.
 
-*Proof.* Appending an entry adds one node to the forest: either a new root,
-adjoining one further top-level child $\mathbf{0}$, or an additional descendant
-of an existing node, enlarging that node. In either case the value strictly
-increases. The formal proof is by induction following the recursion of $o$.
+*Proof.* By structural induction on $\mathsf{hord}$, with Proposition 2.3 at the
+inductive step. $\square$
+
+**Example 3.4.** With $\mathbf{1} = H(\lbrace\lbrace \mathbf{0} \rbrace\rbrace)$,
+$\mathbf{2} = H(\lbrace\lbrace \mathbf{0}, \mathbf{0} \rbrace\rbrace)$,
+$\boldsymbol{\omega} = H(\lbrace\lbrace \mathbf{1} \rbrace\rbrace)$: take
+$I = \lbrace\lbrace\rbrace\rbrace$, $J = \lbrace\lbrace \mathbf{1} \rbrace\rbrace$,
+$K = \lbrace\lbrace \mathbf{0}, \mathbf{0} \rbrace\rbrace$ to get
+$\mathbf{2} \prec \boldsymbol{\omega}$.
+
+**Remark 3.5.** Under $H(\lbrace\lbrace a_1, \dots, a_k \rbrace\rbrace) \mapsto
+\omega^{a_1} \oplus \cdots \oplus \omega^{a_k}$ (natural sum),
+$(\mathsf{hord}, \prec) \cong (\varepsilon_0, <)$. Not used below.
+
+## 4. The measure $o$ (`omap`)
+
+**Definition 4.1 (`omap`).** With $\mathit{tw} = \mathrm{takeWhile}\ (\lambda x.\
+a < x)\ \mathit{rest}$ and $\mathit{dw} = \mathrm{dropWhile}\ (\lambda x.\ a < x)\
+\mathit{rest}$, and writing $o(\mathit{dw}) = H(D)$,
+
+$$o([]) = H(\lbrace\lbrace\rbrace\rbrace), \qquad
+o(a \mathbin{::} \mathit{rest}) = H\big(\lbrace\lbrace o(\mathit{tw}) \rbrace\rbrace \uplus D\big).$$
+
+Equivalently $o$ is the *forest value*: position $i$ has parent
+$\max\lbrace j \mid j < i \wedge S \mathbin{!} j < S \mathbin{!} i\rbrace$ (a root
+if none); each tree contributes $H(\text{children})$ and a forest is combined by
+$\uplus$. This parent rule coincides with the bad root.
+
+**Computed values** (Isabelle): $o([0]) = H(\lbrace\lbrace \mathbf{0} \rbrace\rbrace) =
+\mathbf{1}$; $o(\underbrace{[0, \dots, 0]}_{k}) = \mathbf{k}$; $o([0,1]) =
+\boldsymbol{\omega}$; $o([0,1,1]) = \boldsymbol{\omega}^2$; $o([0,1,2]) =
+\boldsymbol{\omega}^{\boldsymbol{\omega}}$.
+
+## 5. Each step decreases $o$
+
+**Lemma 5.1 (`omap_snoc_increases`).** $\quad o(C) \prec o(C \mathbin{@} [m]).$
+
+*Proof.* Induction along the recursion of $o$: appending $m$ either adjoins a
+top-level child $\mathbf{0}$ or enlarges one child; both are $\prec$-increases.
 $\square$
 
-**Proposition 4.2 (deletion of a final $0$, `m_drop0_decreases`).** If $S$ is
-non-empty and `last S` $= 0$, then $o(\texttt{butlast } S) \prec o(S)$.
+**Proposition 5.2 (`m_drop0_decreases`).** $\quad S \neq [] \ \wedge\
+\mathrm{last}\ S = 0 \implies o(\mathrm{butlast}\ S) \prec o(S).$
 
-*Proof.* A final $0$ is below every entry, hence a root, and being last it has no
-descendants; it is an isolated leaf. Thus $o(S)$ is $o(\texttt{butlast } S)$ with
-one additional top-level child $\mathbf{0}$, and deletion of a single element of
-a multiset is a $\prec_{\mathrm{ms}}$-decrease. $\square$
+*Proof.* Write $o(\mathrm{butlast}\ S) = H(D)$. By `omap_snoc0`,
+$$o(S) = o((\mathrm{butlast}\ S) \mathbin{@} [0]) = H(\lbrace\lbrace \mathbf{0} \rbrace\rbrace \uplus D),$$
+and removing the single element $\mathbf{0}$ is a $\mathrm{multp}$-step. $\square$
 
-We now treat the bad-part step
-$S = (G, B, m) \to (G, \underbrace{B, \dots, B}_{k+1})$, where $m =$ `last S`
-$> 0$ and $B = (v, B_t)$ with $v = S_r$ the entry at the bad root $r$. Since $r$
-is the *last* earlier position with entry below $m$, every entry of $B_t$ is at
-least $m$, hence exceeds $v$.
+For the bad step set $r = \mathrm{badroot}\ S$, $v = S \mathbin{!} r$,
+$m = \mathrm{last}\ S$, $B = \mathrm{drop}\ r\ (\mathrm{butlast}\ S)$. Then
+$B = v \mathbin{::} B_t$ with $\forall x \in B_t.\ v < x$ (indeed $m \le x$), and
+$S = (\mathrm{take}\ r\ S) \mathbin{@} (v \mathbin{::} B_t) \mathbin{@} [m]$.
 
-**Lemma 4.3 (`omap_rep`, `omap_BfM`, `omap_core`).** Under these hypotheses,
-$$o\big(\underbrace{B, \dots, B}_{k+1}\big) \prec o(B, m).$$
+**Lemma 5.3 (`omap_rep`).** $\ \forall x \in B_t.\ v < x \implies$
+$$o(\mathrm{concat}(\mathrm{replicate}\ k\ (v \mathbin{::} B_t))) = H\big(\underbrace{\lbrace\lbrace o(B_t), \dots, o(B_t) \rbrace\rbrace}_{k}\big).$$
 
-*Proof.* The $k+1$ copies of $B = (v, B_t)$ form $k+1$ adjacent trees, each a root
-$v$ with descendant forest $B_t$; hence (lemma `omap_rep`)
-$$o\big(\underbrace{B, \dots, B}_{k+1}\big) = H\big(\underbrace{o(B_t), \dots, o(B_t)}_{k+1}\big).$$
-In $(B, m) = (v, B_t, m)$ the appended $m$ exceeds $v$ and every entry of $B_t$,
-so its parent is $v$; it becomes one further descendant of the single root $v$,
-whence (lemma `omap_BfM`)
-$$o(B, m) = H\big(\lbrace o(B_t, m)\rbrace\big).$$
-The right-hand multiset has the single element $o(B_t, m)$, the left-hand one has
-$k+1$ copies of $o(B_t)$, and $o(B_t) \prec o(B_t, m)$ by Lemma 4.1. Replacing one
-element by finitely many strictly smaller ones is, by definition, a
-$\prec_{\mathrm{ms}}$-decrease. $\square$
+**Lemma 5.4 (`omap_BfM`).** $\ \forall x \in B_t.\ v < x,\ \ v < m \implies$
+$$o((v \mathbin{::} B_t) \mathbin{@} [m]) = H(\lbrace\lbrace o(B_t \mathbin{@} [m]) \rbrace\rbrace).$$
 
-**Lemma 4.4 (`omap_BADCTX`).** For every good part $G$,
-$$o\big(G, \underbrace{B, \dots, B}_{k+1}\big) \prec o(G, B, m).$$
+**Lemma 5.5 (`omap_core`).** $\ \forall x \in B_t.\ v < x,\ \ v < m \implies$
+$$o(\mathrm{concat}(\mathrm{replicate}\ (k{+}1)\ (v \mathbin{::} B_t))) \prec o((v \mathbin{::} B_t) \mathbin{@} [m]).$$
 
-*Proof.* By induction on the length of $G$. Removing the first entry $g$, the
-recursion of $o$ either confines the comparison to the interior of $G$, reducing
-it to a shorter good part with an identical surrounding context on both sides, or,
-once $g$ lies below the bad part, reduces it to Lemma 4.3. The base case
-($G$ empty) is Lemma 4.3 itself. $\square$
+*Proof.* By Lemma 5.3 the left side is $H(\underbrace{\lbrace\lbrace o(B_t), \dots,
+o(B_t) \rbrace\rbrace}_{k+1})$; by Lemma 5.4 the right side is $H(\lbrace\lbrace o(B_t
+\mathbin{@} [m]) \rbrace\rbrace)$. Since $o(B_t) \prec o(B_t \mathbin{@} [m])$ (Lemma
+5.1), one element is replaced by $k{+}1$ strictly smaller ones — a
+$\mathrm{multp}$-step. $\square$
 
-**Proposition 4.5 (bad-part step, `m_bad_decreases`).** If $S$ is non-empty,
-`last S` $> 0$, and a bad root exists, then
-$o\big(G, \underbrace{B, \dots, B}_{k+1}\big) \prec o(S)$ for every $k$.
+**Lemma 5.6 (`omap_BADCTX`).** For all $G$, under the hypotheses on $B_t$,
+$$o(G \mathbin{@} \mathrm{concat}(\mathrm{replicate}\ (k{+}1)\ (v \mathbin{::} B_t))) \prec o(G \mathbin{@} (v \mathbin{::} B_t) \mathbin{@} [m]).$$
 
-*Proof.* The candidate positions for the bad root form a finite set, non-empty
-because $S_0 = 0 < m$ in any reachable sequence, so the bad root is well defined;
-the claim is Lemma 4.4. $\square$
+*Proof.* Induction on $\mathrm{length}\ G$. Peeling $G = g \mathbin{::} G'$, the
+$o$-recursion splits $G' \mathbin{@} (\cdots)$ by $\mathrm{takeWhile} /
+\mathrm{dropWhile}$ at $g$: either it recurses on a shorter context (congruence
+under $H$), or, when $g$ sits below the bad part, it reduces to Lemma 5.5. Base
+$G = []$ is Lemma 5.5. $\square$
 
-## 5. Termination
+**Proposition 5.7 (`m_bad_decreases`).** $\ S \neq [] \ \wedge\ 0 <
+\mathrm{last}\ S \ \wedge\ \mathrm{badset}\ S \neq \emptyset \implies$
+$$o((\mathrm{take}\ r\ S) \mathbin{@} \mathrm{concat}(\mathrm{replicate}\ (k{+}1)\ (\mathrm{drop}\ r\ (\mathrm{butlast}\ S)))) \prec o(S).$$
 
-**Theorem 5.1 (`m_step_decreases`).** If $S \to T$, then $o(T) \prec o(S)$.
+*Proof.* $\mathrm{badset}\ S$ is finite and nonempty, so $r$ is defined; rewriting
+$S = (\mathrm{take}\ r\ S) \mathbin{@} (v \mathbin{::} B_t) \mathbin{@} [m]$ reduces
+the goal to Lemma 5.6. $\square$
 
-*Proof.* The two cases are Propositions 4.2 and 4.5. $\square$
+## 6. Termination
 
-**Theorem 5.2 (termination, `m_termination`).** There is no infinite chain
-$S^{(0)} \to S^{(1)} \to \cdots$; equivalently (`m_no_infinite_expansion`), every
-expansion is finite.
+**Theorem 6.1 (`m_step_decreases`).** $\quad S \to T \implies o(T) \prec o(S).$
 
-*Proof.* An infinite chain would, by Theorem 5.1, induce an infinite strictly
-decreasing chain $o(S^{(0)}) \succ o(S^{(1)}) \succ \cdots$ of values,
-contradicting Proposition 2.4. $\square$
+*Proof.* Cases drop0 / bad are Propositions 5.2 / 5.7. $\square$
 
-## 6. Correspondence with the Isabelle development
+**Theorem 6.2 (`m_termination`).** $\quad \mathrm{wf}\ \lbrace (T, S) \mid S \to T\rbrace.$
+Equivalently (`m_no_infinite_expansion`), no $\mathrm{Seq}$ has $\mathrm{Seq}(i)
+\to \mathrm{Seq}(i{+}1)$ for all $i$.
 
-The statements are transcribed in `prss_paper.thy` (prefix `p_`, left as `sorry`)
-and discharged by the `m_*` facts in `prss_mechanized.thy`. The session is built
-with `isbman build -d . -v PRSS`.
+*Proof.* $\lbrace (T, S) \mid S \to T\rbrace \subseteq o^{-1}(\prec)$ by Theorem
+6.1, and $o^{-1}(\prec)$ is well-founded by Proposition 3.3 (inverse image of a
+well-founded relation). $\square$
+
+## 7. Correspondence with the Isabelle development
+
+Statements: `prss_paper.thy` (`p_*`, `sorry`); proofs: `m_*` in
+`prss_mechanized.thy`. Build: `isbman build -d . -v PRSS`.
 
 | Object | Isabelle | source |
 |---|---|---|
-| value $H(M)$ | `datatype hord = H "hord multiset"` | [prss_ordinal.thy:16](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L16) |
-| order $\prec$ | `hlt` | [prss_ordinal.thy:20](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L20) |
-| Proposition 2.4 | `wfP_hlt` | [prss_ordinal.thy:199](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L199) |
-| sequence | `nat list` | [prss_defs.thy](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy) |
-| measure $o$ (Def. 3.2) | `omap` | [prss_defs.thy:40](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L40) |
-| bad root (Def. 3.1) | `badset` / `badroot` | [prss_defs.thy:67](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L67), [70](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L70) |
-| step $S \to T$ | `step` (`drop0`, `bad`) | [prss_defs.thy:76](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L76) |
-| Lemma 4.1 | `omap_snoc_increases` | [prss_mechanized.thy:106](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L106) |
-| Proposition 4.2 | `m_drop0_decreases` | [prss_mechanized.thy:161](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L161) |
-| Lemma 4.3 | `omap_rep`, `omap_BfM`, `omap_core` | [prss_mechanized.thy:204](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L204) |
-| Lemma 4.4 | `omap_BADCTX` | [prss_mechanized.thy:303](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L303) |
-| Proposition 4.5 | `m_bad_decreases` | [prss_mechanized.thy:426](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L426) |
-| Theorem 5.1 | `m_step_decreases` | [prss_mechanized.thy:494](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L494) |
-| Theorem 5.2 | `m_termination`, `m_no_infinite_expansion` | [prss_mechanized.thy:506](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L506), [515](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L515) |
+| $\mathrm{multp}$ (Def. 2.2) | `multp` | `HOL-Library.Multiset` |
+| Prop. 2.3 | `wfp_multp` | `HOL-Library.Multiset` |
+| $\mathsf{hord}$, $H$ | `datatype hord = H "hord multiset"` | [prss_ordinal.thy:16](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L16) |
+| $\prec$ | `hlt` | [prss_ordinal.thy:20](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L20) |
+| Prop. 3.3 | `wfP_hlt` | [prss_ordinal.thy:199](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L199) |
+| $o$ (Def. 4.1) | `omap` | [prss_defs.thy:40](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L40) |
+| $\mathrm{badset}$ / $\mathrm{badroot}$ | `badset` / `badroot` | [prss_defs.thy:67](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L67), [70](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L70) |
+| $\to$ (Def. 1.1) | `step` (`drop0`, `bad`) | [prss_defs.thy:76](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L76) |
+| Lemma 5.1 | `omap_snoc_increases` | [prss_mechanized.thy:106](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L106) |
+| Prop. 5.2 | `m_drop0_decreases` | [prss_mechanized.thy:161](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L161) |
+| Lemma 5.3 | `omap_rep` | [prss_mechanized.thy:204](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L204) |
+| Lemma 5.4 | `omap_BfM` | [prss_mechanized.thy:228](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L228) |
+| Lemma 5.5 | `omap_core` | [prss_mechanized.thy:246](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L246) |
+| Lemma 5.6 | `omap_BADCTX` | [prss_mechanized.thy:303](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L303) |
+| Prop. 5.7 | `m_bad_decreases` | [prss_mechanized.thy:426](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L426) |
+| Thm. 6.1 | `m_step_decreases` | [prss_mechanized.thy:494](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L494) |
+| Thm. 6.2 | `m_termination`, `m_no_infinite_expansion` | [prss_mechanized.thy:506](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L506), [515](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L515) |
 
 ---
 
