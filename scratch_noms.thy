@@ -490,4 +490,63 @@ next
   qed
 qed
 
+text \<open>Appending any entry strictly increases the measure.\<close>
+lemma omap_snoc_increase: "omap C <o omap (C @ [m])"
+proof (induction C rule: omap.induct)
+  case 1
+  show ?case by simp
+next
+  case (2 a rest)
+  show ?case
+  proof (cases "a < m \<and> (\<forall>x\<in>set rest. a < x)")
+    case True
+    hence am: "a < m" and allr: "\<forall>x\<in>set rest. a < x" by auto
+    have tw: "takeWhile (\<lambda>x. a < x) (rest @ [m]) = rest @ [m]"
+      using allr am by (simp add: takeWhile_append)
+    have dw: "dropWhile (\<lambda>x. a < x) (rest @ [m]) = []"
+      using allr am by (simp add: dropWhile_append)
+    have twr: "takeWhile (\<lambda>x. a < x) rest = rest" using allr by simp
+    have dwr: "dropWhile (\<lambda>x. a < x) rest = []" using allr by simp
+    have L: "omap ((a # rest) @ [m]) = E (omap (rest @ [m])) Z" by (simp add: tw dw)
+    have Rr: "omap (a # rest) = E (omap rest) Z" by (simp add: twr dwr)
+    have "omap rest <o omap (rest @ [m])" using 2(1) twr by simp
+    then show ?thesis using L Rr by simp
+  next
+    case False
+    note nb = False
+    have tw: "takeWhile (\<lambda>x. a < x) (rest @ [m]) = takeWhile (\<lambda>x. a < x) rest"
+    proof (cases "a < m")
+      case True
+      with nb obtain x where "x \<in> set rest" "\<not> a < x" by auto
+      thus ?thesis by (rule takeWhile_append1)
+    next
+      case False
+      thus ?thesis by (simp add: takeWhile_tail)
+    qed
+    have dw: "dropWhile (\<lambda>x. a < x) (rest @ [m]) = dropWhile (\<lambda>x. a < x) rest @ [m]"
+    proof (cases "a < m")
+      case True
+      with nb obtain x where "x \<in> set rest" "\<not> a < x" by auto
+      thus ?thesis by (rule dropWhile_append1)
+    next
+      case False
+      thus ?thesis by (simp add: dropWhile_append3)
+    qed
+    have IH2: "omap (dropWhile (\<lambda>x. a < x) rest)
+                 <o omap (dropWhile (\<lambda>x. a < x) rest @ [m])" using 2(2) .
+    have L: "omap ((a # rest) @ [m])
+               = ins (omap (takeWhile (\<lambda>x. a < x) rest))
+                     (omap (dropWhile (\<lambda>x. a < x) rest @ [m]))"
+      by (simp add: tw dw)
+    have Rr: "omap (a # rest)
+                = ins (omap (takeWhile (\<lambda>x. a < x) rest))
+                      (omap (dropWhile (\<lambda>x. a < x) rest))" by simp
+    have "ins (omap (takeWhile (\<lambda>x. a < x) rest)) (omap (dropWhile (\<lambda>x. a < x) rest))
+            <o ins (omap (takeWhile (\<lambda>x. a < x) rest))
+                   (omap (dropWhile (\<lambda>x. a < x) rest @ [m]))"
+      using ins_mono2[OF cnf_omap cnf_omap IH2] .
+    then show ?thesis using L Rr by simp
+  qed
+qed
+
 end
