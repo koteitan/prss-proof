@@ -347,4 +347,55 @@ next
   show ?case using 2(1) 2(2) by (simp add: cnf_ins)
 qed
 
+section \<open>Each expansion step strictly decreases the measure\<close>
+
+text \<open>Inserting a term strictly increases the value.\<close>
+lemma olt_ins_self: "y <o ins e y"
+proof (induction y)
+  case Z
+  show ?case by simp
+next
+  case (E a b)
+  show ?case
+  proof (cases "a <o e")
+    case True then show ?thesis by simp
+  next
+    case False then show ?thesis using E.IH(2) by simp
+  qed
+qed
+
+text \<open>Appending a trailing \<open>0\<close> inserts the least term \<open>\<omega>\<^sup>0\<close>.\<close>
+lemma omap_snoc0: "omap (P @ [0]) = ins Z (omap P)"
+proof (induction P rule: omap.induct)
+  case 1
+  show ?case by simp
+next
+  case (2 a rest)
+  have tw: "takeWhile (\<lambda>x. a < x) (rest @ [0]) = takeWhile (\<lambda>x. a < x) rest"
+    by (simp add: takeWhile_tail)
+  have dw: "dropWhile (\<lambda>x. a < x) (rest @ [0]) = dropWhile (\<lambda>x. a < x) rest @ [0]"
+    by (simp add: dropWhile_append3)
+  have "omap ((a # rest) @ [0]) = omap (a # (rest @ [0]))" by simp
+  also have "\<dots> = ins (omap (takeWhile (\<lambda>x. a < x) rest))
+                      (omap (dropWhile (\<lambda>x. a < x) rest @ [0]))"
+    using tw dw by simp
+  also have "\<dots> = ins (omap (takeWhile (\<lambda>x. a < x) rest))
+                      (ins Z (omap (dropWhile (\<lambda>x. a < x) rest)))"
+    using 2(2) by simp
+  also have "\<dots> = ins Z (ins (omap (takeWhile (\<lambda>x. a < x) rest))
+                              (omap (dropWhile (\<lambda>x. a < x) rest)))"
+    by (rule ins_comm)
+  also have "\<dots> = ins Z (omap (a # rest))" by simp
+  finally show ?case .
+qed
+
+proposition m_drop0:
+  assumes "S \<noteq> []" "last S = 0"
+  shows "omap (butlast S) <o omap S"
+proof -
+  from assms have "S = butlast S @ [0]" by (metis append_butlast_last_id)
+  hence "omap S = ins Z (omap (butlast S))" using omap_snoc0 by metis
+  thus ?thesis using olt_ins_self by metis
+qed
+
 end
