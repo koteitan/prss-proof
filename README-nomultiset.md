@@ -1,3 +1,5 @@
+[← Back](README.md) | [English](README-nomultiset.md) | [Japanese](README-nomultiset-ja.md)
+
 # Multiset-free termination proof (branch `without-multiset`)
 
 `prss_nomultiset.thy` is a **self-contained** proof of the same termination
