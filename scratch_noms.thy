@@ -635,4 +635,144 @@ proof -
   thus ?thesis using L R by simp
 qed
 
+text \<open>Generic split helpers (no multisets).\<close>
+lemma takeWhile_append_notall:
+  assumes "\<not> (\<forall>y\<in>set xs. P y)" shows "takeWhile P (xs @ ys) = takeWhile P xs"
+proof -
+  from assms obtain x where "x \<in> set xs" "\<not> P x" by auto
+  thus ?thesis by (rule takeWhile_append1)
+qed
+
+lemma dropWhile_append_notall:
+  assumes "\<not> (\<forall>y\<in>set xs. P y)" shows "dropWhile P (xs @ ys) = dropWhile P xs @ ys"
+proof -
+  from assms obtain x where "x \<in> set xs" "\<not> P x" by auto
+  thus ?thesis by (rule dropWhile_append1)
+qed
+
+lemma takeWhile_append_all:
+  "(\<forall>y\<in>set xs. P y) \<Longrightarrow> takeWhile P (xs @ ys) = xs @ takeWhile P ys"
+  by (simp add: takeWhile_append2)
+
+lemma dropWhile_append_all:
+  "(\<forall>y\<in>set xs. P y) \<Longrightarrow> dropWhile P (xs @ ys) = dropWhile P ys"
+  by (simp add: dropWhile_append2)
+text \<open>Bad-part decrease with a good-part context \<open>G\<close> in front.\<close>
+lemma omap_BADCTX:
+  assumes Bt_gt: "\<forall>x\<in>set Bt. v < x" and vm: "v < m"
+  shows "omap (G @ concat (replicate (Suc k) (v # Bt)))
+           <o omap (G @ (v # Bt) @ [m])"
+proof -
+  define BK where "BK = concat (replicate (Suc k) (v # Bt))"
+  define B1 where "B1 = (v # Bt) @ [m]"
+  have core: "omap BK <o omap B1"
+    unfolding BK_def B1_def using omap_core[OF Bt_gt vm] by simp
+  have blkK_cons: "BK = v # (Bt @ concat (replicate k (v # Bt)))"
+    unfolding BK_def by simp
+  have blk1_cons: "B1 = v # (Bt @ [m])" unfolding B1_def by simp
+  have blkK_sub: "set BK \<subseteq> insert v (set Bt)"
+    unfolding BK_def by (auto simp: in_set_replicate)
+  have "omap (G @ BK) <o omap (G @ B1)"
+  proof (induction G rule: length_induct)
+    case (1 G)
+    note IH = "1.IH"
+    show ?case
+    proof (cases G)
+      case Nil
+      show ?thesis using Nil core by simp
+    next
+      case (Cons g G')
+      show ?thesis
+      proof (cases "\<forall>x\<in>set G'. g < x")
+        case False
+        hence nb: "\<not> (\<forall>y\<in>set G'. g < y)" by simp
+        let ?tw = "takeWhile (\<lambda>x. g < x) G'"
+        let ?G'' = "dropWhile (\<lambda>x. g < x) G'"
+        have twK: "takeWhile (\<lambda>x. g < x) (G' @ BK) = ?tw"
+          by (rule takeWhile_append_notall[OF nb])
+        have tw1: "takeWhile (\<lambda>x. g < x) (G' @ B1) = ?tw"
+          by (rule takeWhile_append_notall[OF nb])
+        have dwK: "dropWhile (\<lambda>x. g < x) (G' @ BK) = ?G'' @ BK"
+          by (rule dropWhile_append_notall[OF nb])
+        have dw1: "dropWhile (\<lambda>x. g < x) (G' @ B1) = ?G'' @ B1"
+          by (rule dropWhile_append_notall[OF nb])
+        have len: "length ?G'' < length G"
+          by (simp add: Cons le_imp_less_Suc length_dropWhile_le)
+        have ih: "omap (?G'' @ BK) <o omap (?G'' @ B1)" using IH len by blast
+        have "ins (omap ?tw) (omap (?G'' @ BK)) <o ins (omap ?tw) (omap (?G'' @ B1))"
+          using ins_mono2[OF cnf_omap cnf_omap ih] .
+        thus ?thesis using Cons twK tw1 dwK dw1 by simp
+      next
+        case True
+        note allG = this
+        show ?thesis
+        proof (cases "g < v")
+          case True
+          have allK: "\<forall>x\<in>set (G' @ BK). g < x"
+          proof
+            fix x assume "x \<in> set (G' @ BK)"
+            then consider "x \<in> set G'" | "x \<in> set BK" by auto
+            thus "g < x"
+            proof cases
+              case 1 thus ?thesis using allG by blast
+            next
+              case 2 hence "x = v \<or> x \<in> set Bt" using blkK_sub by auto
+              thus ?thesis using \<open>g < v\<close> Bt_gt less_trans by blast
+            qed
+          qed
+          have all1: "\<forall>x\<in>set (G' @ B1). g < x"
+          proof
+            fix x assume "x \<in> set (G' @ B1)"
+            then consider "x \<in> set G'" | "x = v" | "x \<in> set Bt" | "x = m"
+              by (auto simp: blk1_cons)
+            thus "g < x"
+            proof cases
+              case 1 thus ?thesis using allG by blast
+            next
+              case 2 thus ?thesis using \<open>g < v\<close> by simp
+            next
+              case 3 thus ?thesis using \<open>g < v\<close> Bt_gt less_trans by blast
+            next
+              case 4 thus ?thesis using \<open>g < v\<close> vm less_trans by blast
+            qed
+          qed
+          have twK': "takeWhile (\<lambda>x. g < x) (G' @ BK) = G' @ BK"
+            using allK by (simp add: takeWhile_eq_all_conv)
+          have dwK': "dropWhile (\<lambda>x. g < x) (G' @ BK) = []"
+            using allK by (simp add: dropWhile_eq_Nil_conv)
+          have tw1': "takeWhile (\<lambda>x. g < x) (G' @ B1) = G' @ B1"
+            using all1 by (simp add: takeWhile_eq_all_conv)
+          have dw1': "dropWhile (\<lambda>x. g < x) (G' @ B1) = []"
+            using all1 by (simp add: dropWhile_eq_Nil_conv)
+          have ekK: "omap ((g # G') @ BK) = E (omap (G' @ BK)) Z"
+            by (simp only: append_Cons omap.simps(2) twK' dwK' omap.simps(1) ins.simps(1))
+          have ek1: "omap ((g # G') @ B1) = E (omap (G' @ B1)) Z"
+            by (simp only: append_Cons omap.simps(2) tw1' dw1' omap.simps(1) ins.simps(1))
+          have len: "length G' < length G" by (simp add: Cons)
+          have ih: "omap (G' @ BK) <o omap (G' @ B1)" using IH len by blast
+          thus ?thesis using ekK ek1 Cons by simp
+        next
+          case False
+          have tK: "takeWhile (\<lambda>x. g < x) BK = []" using False blkK_cons by simp
+          have dK: "dropWhile (\<lambda>x. g < x) BK = BK" using False blkK_cons by simp
+          have t1: "takeWhile (\<lambda>x. g < x) B1 = []" using False blk1_cons by simp
+          have d1: "dropWhile (\<lambda>x. g < x) B1 = B1" using False blk1_cons by simp
+          have twK: "takeWhile (\<lambda>x. g < x) (G' @ BK) = G'"
+            using takeWhile_append_all[OF allG] tK by simp
+          have dwK: "dropWhile (\<lambda>x. g < x) (G' @ BK) = BK"
+            using dropWhile_append_all[OF allG] dK by simp
+          have tw1: "takeWhile (\<lambda>x. g < x) (G' @ B1) = G'"
+            using takeWhile_append_all[OF allG] t1 by simp
+          have dw1: "dropWhile (\<lambda>x. g < x) (G' @ B1) = B1"
+            using dropWhile_append_all[OF allG] d1 by simp
+          have "ins (omap G') (omap BK) <o ins (omap G') (omap B1)"
+            using ins_mono2[OF cnf_omap cnf_omap core] .
+          thus ?thesis using Cons twK tw1 dwK dw1 by simp
+        qed
+      qed
+    qed
+  qed
+  thus ?thesis unfolding BK_def B1_def .
+qed
+
 end
