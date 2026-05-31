@@ -12,3 +12,4 @@ session PRSS = HOL +
     prss_defs
     prss_paper
     prss_mechanized
+    prss_nomultiset

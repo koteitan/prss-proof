@@ -1,4 +1,4 @@
-theory scratch_noms
+theory prss_nomultiset
   imports Main
 begin
 
@@ -773,6 +773,115 @@ proof -
     qed
   qed
   thus ?thesis unfolding BK_def B1_def .
+qed
+
+section \<open>The expansion step and termination\<close>
+
+definition badset :: "nat list \<Rightarrow> nat set" where
+  "badset S = {p. p < length S - 1 \<and> S ! p < last S}"
+
+definition badroot :: "nat list \<Rightarrow> nat" where
+  "badroot S = Max (badset S)"
+
+proposition m_bad:
+  assumes "S \<noteq> []" "0 < last S" "badset S \<noteq> {}"
+  shows "omap (take (badroot S) S
+              @ concat (replicate (Suc k) (drop (badroot S) (butlast S)))) <o omap S"
+proof -
+  define m where "m = last S"
+  define r where "r = badroot S"
+  define Q where "Q = butlast S"
+  have lenQ: "length Q = length S - 1" by (simp add: Q_def)
+  have fin: "finite (badset S)" by (auto simp: badset_def)
+  have r_in: "r \<in> badset S"
+    unfolding r_def badroot_def using Max_in[OF fin assms(3)] .
+  have r_lt: "r < length S - 1" and r_val: "S ! r < m"
+    using r_in by (auto simp: badset_def m_def)
+  have rS: "r < length S" using r_lt by (cases "length S") auto
+  have r_max: "p \<le> r" if "p \<in> badset S" for p
+    unfolding r_def badroot_def using Max_ge[OF fin that] .
+  define v where "v = Q ! r"
+  define Bt where "Bt = drop (Suc r) Q"
+  have rQ: "r < length Q" using r_lt lenQ by simp
+  have vS: "v = S ! r" using v_def Q_def rQ by (simp add: nth_butlast lenQ)
+  have B_split: "drop r Q = v # Bt"
+    using rQ by (simp add: v_def Bt_def Cons_nth_drop_Suc)
+  have Bt_ge: "\<forall>x\<in>set Bt. m \<le> x"
+  proof
+    fix x assume "x \<in> set Bt"
+    then obtain i where i: "i < length Bt" "x = Bt ! i" by (auto simp: in_set_conv_nth)
+    hence xi: "x = Q ! (Suc r + i)" by (simp add: Bt_def)
+    have idx: "Suc r + i < length Q" using i(1) by (simp add: Bt_def)
+    hence p_lt: "Suc r + i < length S - 1" by (simp add: lenQ)
+    have "x = S ! (Suc r + i)" using xi Q_def idx by (simp add: nth_butlast lenQ)
+    moreover have "\<not> (Suc r + i \<le> r)" by simp
+    ultimately have "Suc r + i \<notin> badset S" using r_max by blast
+    hence "\<not> (S ! (Suc r + i) < m)" using p_lt by (auto simp: badset_def m_def)
+    thus "m \<le> x" using \<open>x = S ! (Suc r + i)\<close> by simp
+  qed
+  have Bt_gt: "\<forall>x\<in>set Bt. v < x" using Bt_ge r_val vS by force
+  have vm: "v < m" using r_val vS by simp
+  have G_eq: "take r S = take r Q" using take_butlast[OF rS] by (simp add: Q_def)
+  have S_eq: "S = take r Q @ (v # Bt) @ [m]"
+  proof -
+    have "Q = take r Q @ drop r Q" by simp
+    also have "\<dots> = take r Q @ (v # Bt)" by (simp add: B_split)
+    finally have "Q @ [m] = take r Q @ (v # Bt) @ [m]" by simp
+    moreover have "S = Q @ [m]" using assms(1) by (simp add: Q_def m_def)
+    ultimately show ?thesis by simp
+  qed
+  have lhs_eq: "take (badroot S) S
+        @ concat (replicate (Suc k) (drop (badroot S) (butlast S)))
+      = take r Q @ concat (replicate (Suc k) (v # Bt))"
+    using G_eq B_split by (simp add: r_def Q_def)
+  have org_eq: "omap S = omap (take r Q @ (v # Bt) @ [m])"
+    by (rule arg_cong[OF S_eq])
+  show ?thesis
+    unfolding lhs_eq org_eq
+    using omap_BADCTX[OF Bt_gt vm, where G = "take r Q" and k = k] .
+qed
+
+inductive step :: "nat list \<Rightarrow> nat list \<Rightarrow> bool" where
+  drop0: "S \<noteq> [] \<Longrightarrow> last S = 0 \<Longrightarrow> step S (butlast S)"
+| bad:   "S \<noteq> [] \<Longrightarrow> 0 < last S \<Longrightarrow> badset S \<noteq> {} \<Longrightarrow>
+            T = take (badroot S) S
+                @ concat (replicate (Suc k) (drop (badroot S) (butlast S))) \<Longrightarrow>
+            step S T"
+
+theorem m_step_decreases: "step S T \<Longrightarrow> omap T <o omap S"
+proof (induction rule: step.induct)
+  case (drop0 S)
+  show ?case by (rule m_drop0[OF drop0.hyps(1) drop0.hyps(2)])
+next
+  case (bad S T k)
+  have "omap (take (badroot S) S
+            @ concat (replicate (Suc k) (drop (badroot S) (butlast S)))) <o omap S"
+    using m_bad[OF bad.hyps(1) bad.hyps(2) bad.hyps(3)] .
+  thus ?case using bad.hyps(4) by simp
+qed
+
+theorem m_termination: "wf {(T, S). step S T}"
+proof -
+  let ?R = "{(x, y). R x y}"
+  have wfR: "wf ?R" using wfP_R by (simp add: wfp_def)
+  have "{(T, S). step S T} \<subseteq> inv_image ?R omap"
+  proof clarify
+    fix S T assume "step S T"
+    hence "omap T <o omap S" by (rule m_step_decreases)
+    hence "R (omap T) (omap S)" by (simp add: R_def cnf_omap)
+    thus "(T, S) \<in> inv_image ?R omap" by (simp add: inv_image_def)
+  qed
+  moreover have "wf (inv_image ?R omap)" using wfR by (rule wf_inv_image)
+  ultimately show ?thesis by (blast intro: wf_subset)
+qed
+
+corollary m_no_infinite_expansion:
+  "\<not> (\<exists>Seq. \<forall>i. step (Seq i) (Seq (Suc i)))"
+proof
+  assume "\<exists>Seq. \<forall>i. step (Seq i) (Seq (Suc i))"
+  then obtain Seq where "\<forall>i. step (Seq i) (Seq (Suc i))" by blast
+  hence "\<forall>i. (Seq (Suc i), Seq i) \<in> {(T, S). step S T}" by simp
+  thus False using m_termination by (meson wf_iff_no_infinite_down_chain)
 qed
 
 end
