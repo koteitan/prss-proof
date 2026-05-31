@@ -549,4 +549,90 @@ next
   qed
 qed
 
+subsection \<open>The bad-part step\<close>
+
+lemma takeWhile_cr: "takeWhile (\<lambda>x. (v::nat) < x) (concat (replicate n (v # Bt))) = []"
+  by (cases n) auto
+
+lemma dropWhile_cr:
+  "dropWhile (\<lambda>x. (v::nat) < x) (concat (replicate n (v # Bt))) = concat (replicate n (v # Bt))"
+  by (cases n) auto
+
+text \<open>\<open>k\<close> copies of the bad part \<open>v # Bt\<close> give \<open>k\<close> equal terms \<open>\<omega>\<^bsup>o(Bt)\<^esup>\<close>.\<close>
+lemma omap_rep:
+  assumes "\<forall>x\<in>set Bt. v < x"
+  shows "omap (concat (replicate k (v # Bt))) = ((ins (omap Bt)) ^^ k) Z"
+proof (induction k)
+  case 0
+  show ?case by simp
+next
+  case (Suc n)
+  let ?rest = "concat (replicate n (v # Bt))"
+  have tw: "takeWhile (\<lambda>x. v < x) (Bt @ ?rest) = Bt"
+    using assms by (simp add: takeWhile_append takeWhile_cr)
+  have dw: "dropWhile (\<lambda>x. v < x) (Bt @ ?rest) = ?rest"
+    using assms by (simp add: dropWhile_append dropWhile_cr)
+  have "omap (concat (replicate (Suc n) (v # Bt))) = omap (v # (Bt @ ?rest))"
+    by simp
+  also have "\<dots> = ins (omap Bt) (omap ?rest)" by (simp add: tw dw)
+  also have "\<dots> = ins (omap Bt) (((ins (omap Bt)) ^^ n) Z)" using Suc.IH by simp
+  also have "\<dots> = ((ins (omap Bt)) ^^ Suc n) Z" by simp
+  finally show ?case .
+qed
+
+text \<open>The last entry \<open>m\<close> falls inside \<open>v\<close>'s subtree, giving a single term.\<close>
+lemma omap_BfM:
+  assumes "\<forall>x\<in>set Bt. v < x" "v < m"
+  shows "omap ((v # Bt) @ [m]) = E (omap (Bt @ [m])) Z"
+proof -
+  have all: "\<forall>x\<in>set (Bt @ [m]). v < x" using assms by auto
+  have tw: "takeWhile (\<lambda>x. v < x) (Bt @ [m]) = Bt @ [m]"
+    using all by (simp add: takeWhile_eq_all_conv)
+  have dw: "dropWhile (\<lambda>x. v < x) (Bt @ [m]) = []"
+    using all by (simp add: dropWhile_eq_Nil_conv)
+  have "omap ((v # Bt) @ [m]) = omap (v # (Bt @ [m]))" by simp
+  also have "\<dots> = ins (omap (Bt @ [m])) (omap [])" by (simp add: tw dw)
+  also have "\<dots> = E (omap (Bt @ [m])) Z" by simp
+  finally show ?thesis .
+qed
+
+lemma lead_funpow_ins:
+  "((ins \<beta>) ^^ n) Z = Z \<or> lead (((ins \<beta>) ^^ n) Z) = \<beta>"
+proof (induction n)
+  case 0
+  show ?case by simp
+next
+  case (Suc n)
+  have "((ins \<beta>) ^^ Suc n) Z = ins \<beta> (((ins \<beta>) ^^ n) Z)" by simp
+  thus ?case using Suc by (cases "((ins \<beta>) ^^ n) Z") (auto simp: olt_irrefl)
+qed
+
+text \<open>A CNF whose exponents are all \<open>\<beta>\<close> is below \<open>\<omega>\<^bsup>\<gamma>\<^esup>\<close> whenever \<open>\<beta> <o \<gamma>\<close>.\<close>
+lemma funpow_ins_lt:
+  assumes "\<beta> <o \<gamma>"
+  shows "((ins \<beta>) ^^ n) Z <o E \<gamma> Z"
+proof (cases "((ins \<beta>) ^^ n) Z")
+  case Z
+  show ?thesis using Z by simp
+next
+  case (E p q)
+  have "((ins \<beta>) ^^ n) Z = Z \<or> lead (((ins \<beta>) ^^ n) Z) = \<beta>" using lead_funpow_ins .
+  with E have "p = \<beta>" by simp
+  thus ?thesis using E assms by simp
+qed
+
+text \<open>Core decrease: \<open>k+1\<close> copies of \<open>\<omega>\<^bsup>o(Bt)\<^esup>\<close> are below \<open>\<omega>\<^bsup>o(Bt @ [m])\<^esup>\<close>.\<close>
+lemma omap_core:
+  assumes "\<forall>x\<in>set Bt. v < x" "v < m"
+  shows "omap (concat (replicate (Suc k) (v # Bt))) <o omap ((v # Bt) @ [m])"
+proof -
+  have L: "omap (concat (replicate (Suc k) (v # Bt))) = ((ins (omap Bt)) ^^ Suc k) Z"
+    using omap_rep[OF assms(1)] .
+  have R: "omap ((v # Bt) @ [m]) = E (omap (Bt @ [m])) Z" using omap_BfM[OF assms] .
+  have lt: "omap Bt <o omap (Bt @ [m])" using omap_snoc_increase .
+  have "((ins (omap Bt)) ^^ Suc k) Z <o E (omap (Bt @ [m])) Z"
+    using funpow_ins_lt[OF lt] .
+  thus ?thesis using L R by simp
+qed
+
 end
