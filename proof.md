@@ -1,12 +1,16 @@
 [← Back](README.md) | [English](proof.md) | [Japanese](proof-ja.md)
 
-# Termination of Bashicu's Primitive Sequence System
+# Termination of Bashicu's Primitive Sequence System (multiset-free)
 
 We prove termination of Bashicu's *Primitive Sequence System*. Each sequence
 $S \in \mathsf{list}(\mathbb{N})$ is mapped to a value $o(S)$ in a well-founded
-order $(\mathsf{hord}, \prec)$, and each expansion step strictly decreases $o$;
-well-foundedness then forbids any infinite expansion. The argument is formalised
-in Isabelle/HOL (correspondence in §8).
+order — concretely, a *Cantor normal form* term below $\varepsilon_0$ ordered
+lexicographically — and each expansion step strictly decreases $o$.
+Well-foundedness then forbids any infinite expansion. This is the
+**multiset-free** development `prss_nomultiset.thy` (imports `Main` only;
+§7 lists the correspondence). The companion [proof.md on `main`](https://github.com/koteitan/prss-proof/blob/main/proof.md)
+uses hereditarily finite multisets instead; see
+[README-nomultiset.md](README-nomultiset.md) for why that version is shorter.
 
 A relation $R$ is *well-founded* when there is no infinite descending chain, i.e.
 no $x_0, x_1, x_2, \dots$ with $R(x_{i+1}, x_i)$ for all $i$.
@@ -15,85 +19,21 @@ no $x_0, x_1, x_2, \dots$ with $R(x_{i+1}, x_i)$ for all $i$.
 
 Finite lists over a set (here $\mathbb{N}$) are built from two *constructors*:
 the empty list $[]$ and $\mathrm{cons}$ $a \mathbin{::} xs$ (prepend $a$ to
-$xs$). Every list arises uniquely this way, e.g. $[a, b, c] = a \mathbin{::} (b
-\mathbin{::} (c \mathbin{::} []))$ and $[x] = x \mathbin{::} []$; like $H$ in §4,
-$[]$ and $\mathbin{::}$ are primitive, not defined by equations. The operations
-below are then defined by recursion (the conditional $P\ x$ in
-$\mathrm{takeWhile}/\mathrm{dropWhile}$ tests the head):
+$xs$); every list is uniquely $[a_1, \dots, a_n] = a_1 \mathbin{::} \cdots
+\mathbin{::} a_n \mathbin{::} []$. The operations used below, by recursion (the
+conditional $P\ x$ in $\mathrm{takeWhile}/\mathrm{dropWhile}$ tests the head):
 
-$\mathrm{length}\ xs$ — the number of entries:
-$$\mathrm{length}\ [] = 0, \qquad \mathrm{length}\ (x \mathbin{::} xs) = 1 + \mathrm{length}\ xs.$$
+$\mathrm{length}$, append $xs \mathbin{@} ys$, $\mathrm{last}$ (final entry),
+$\mathrm{butlast}$ (drop the final entry), $\mathrm{take}\ n$ / $\mathrm{drop}\ n$
+(first $n$ / all but the first $n$), indexing $xs \mathbin{!} n$, and:
 
-$xs \mathbin{@} ys$ — *append*: $xs$ followed by $ys$:
-$$[] \mathbin{@} ys = ys, \qquad (x \mathbin{::} xs) \mathbin{@} ys = x \mathbin{::} (xs \mathbin{@} ys).$$
+$$\mathrm{takeWhile}\ P\ (x \mathbin{::} xs) = \begin{cases} x \mathbin{::} \mathrm{takeWhile}\ P\ xs & P\ x \\ [] & \neg P\ x \end{cases}, \qquad
+\mathrm{dropWhile}\ P\ (x \mathbin{::} xs) = \begin{cases} \mathrm{dropWhile}\ P\ xs & P\ x \\ x \mathbin{::} xs & \neg P\ x \end{cases},$$
 
-$\mathrm{last}\ xs$ — the final entry:
-$$\mathrm{last}\ [x] = x, \qquad \mathrm{last}\ (x \mathbin{::} y \mathbin{::} ys) = \mathrm{last}\ (y \mathbin{::} ys).$$
+$$\mathrm{concat}\ (xs \mathbin{::} xss) = xs \mathbin{@} \mathrm{concat}\ xss, \qquad
+\mathrm{replicate}\ (n{+}1)\ x = x \mathbin{::} \mathrm{replicate}\ n\ x.$$
 
-$\mathrm{butlast}\ xs$ — $xs$ with its final entry removed (so $xs = \mathrm{butlast}\ xs \mathbin{@} [\mathrm{last}\ xs]$ when $xs \neq []$):
-$$\mathrm{butlast}\ [] = [], \quad \mathrm{butlast}\ [x] = [], \quad \mathrm{butlast}\ (x \mathbin{::} y \mathbin{::} ys) = x \mathbin{::} \mathrm{butlast}\ (y \mathbin{::} ys).$$
-
-$\mathrm{take}\ n\ xs$ — the first $n$ entries:
-$$\mathrm{take}\ 0\ xs = [], \quad \mathrm{take}\ n\ [] = [], \quad \mathrm{take}\ (n{+}1)\ (x \mathbin{::} xs) = x \mathbin{::} \mathrm{take}\ n\ xs.$$
-
-$\mathrm{drop}\ n\ xs$ — $xs$ with its first $n$ entries removed (so $\mathrm{take}\ n\ xs \mathbin{@} \mathrm{drop}\ n\ xs = xs$):
-$$\mathrm{drop}\ 0\ xs = xs, \quad \mathrm{drop}\ n\ [] = [], \quad \mathrm{drop}\ (n{+}1)\ (x \mathbin{::} xs) = \mathrm{drop}\ n\ xs.$$
-
-$xs \mathbin{!} n$ — the $n$-th entry (counting from $0$):
-$$(x \mathbin{::} xs) \mathbin{!} 0 = x, \qquad (x \mathbin{::} xs) \mathbin{!} (n{+}1) = xs \mathbin{!} n.$$
-
-$\mathrm{takeWhile}\ P\ xs$ — the longest prefix whose entries all satisfy $P$:
-$$\mathrm{takeWhile}\ P\ [] = [], \qquad \mathrm{takeWhile}\ P\ (x \mathbin{::} xs) = \begin{cases} x \mathbin{::} \mathrm{takeWhile}\ P\ xs & P\ x \\ [] & \neg P\ x \end{cases}.$$
-
-$\mathrm{dropWhile}\ P\ xs$ — the rest after that prefix:
-$$\mathrm{dropWhile}\ P\ [] = [], \qquad \mathrm{dropWhile}\ P\ (x \mathbin{::} xs) = \begin{cases} \mathrm{dropWhile}\ P\ xs & P\ x \\ x \mathbin{::} xs & \neg P\ x \end{cases}.$$
-
-$\mathrm{concat}\ xss$ — flatten a list of lists into one list:
-$$\mathrm{concat}\ [] = [], \qquad \mathrm{concat}\ (xs \mathbin{::} xss) = xs \mathbin{@} \mathrm{concat}\ xss.$$
-
-$\mathrm{replicate}\ n\ x$ — the list of $n$ copies of $x$:
-$$\mathrm{replicate}\ 0\ x = [], \qquad \mathrm{replicate}\ (n{+}1)\ x = x \mathbin{::} \mathrm{replicate}\ n\ x.$$
-
-## 2. Multisets
-
-A multiset is like a set but counts repetitions and ignores order; we write it
-with double braces. For example $\lbrace\lbrace 1, 1, 4 \rbrace\rbrace$ has two
-$1$'s and one $4$, equals $\lbrace\lbrace 4, 1, 1 \rbrace\rbrace$, and differs
-from $\lbrace\lbrace 1, 4 \rbrace\rbrace$ (one $1$). The empty one is
-$\lbrace\lbrace\rbrace\rbrace$. Where a set is given by an indicator function
-$\chi : A \to \lbrace 0, 1\rbrace$, a multiset widens the codomain to
-$\mathbb{N}$, recording a multiplicity instead of mere membership. The formal
-definition is as follows.
-
-**Definition 2.1 (finite multisets).** A *multiset* over a set $A$ is a map
-$\mu : A \to \mathbb{N}$, with $\mu(a)$ the *multiplicity* of $a$. It is *finite*
-when only finitely many multiplicities are nonzero:
-
-$$\mathcal{M}_{\mathrm{fin}}(A) = \lbrace \mu : A \to \mathbb{N} \ \mid\ \lvert \lbrace a \in A : \mu(a) > 0\rbrace \rvert < \infty \rbrace.$$
-
-Membership, the empty and singleton multisets, and the sum $\uplus$ are
-
-$$a \in \mu \iff \mu(a) > 0, \qquad
-\lbrace\lbrace\rbrace\rbrace(a) = 0, \qquad
-\lbrace\lbrace x \rbrace\rbrace(a) = \begin{cases} 1 & a = x \\ 0 & a \neq x \end{cases}, \qquad
-(\mu \uplus \nu)(a) = \mu(a) + \nu(a).$$
-
-**Definition 2.2 (multiset extension, `multp`).** For a relation $R$ on $A$, the
-relation $\mathrm{multp}\ R$ on $\mathcal{M}_{\mathrm{fin}}(A)$ relates $(M, N)$
-iff
-
-$$\exists I, J, K.\ \ N = I \uplus J \ \wedge\ M = I \uplus K \ \wedge\ J \neq \lbrace\lbrace\rbrace\rbrace \ \wedge\ (\forall k \in K.\ \exists j \in J.\ R(k, j)).$$
-
-That is: $M$ arises from $N$ by removing a nonempty sub-multiset $J$ and inserting
-$K$, every element of which is $R$-below some element of $J$.
-
-**Proposition 2.3 (`wfp_multp`).** If $R$ is well-founded then so is
-$\mathrm{multp}\ R$.
-
-This is a library fact (`HOL-Library.Multiset`); it is the only property of
-multisets the proof needs beyond the definitions.
-
-## 3. The expansion step
+## 2. The expansion step
 
 For a counter $n \in \mathbb{N}$ and activation function $f$ (Bashicu:
 $f(n)=n^2$), with $X = \mathrm{length}\ S$ and $m = \mathrm{last}\ S$,
@@ -109,7 +49,7 @@ $$r = \max\lbrace p \mid p < X-1 \ \wedge\ S \mathbin{!} p < m\rbrace, \qquad
 G = \mathrm{take}\ r\ S, \qquad
 B = \mathrm{drop}\ r\ (\mathrm{butlast}\ S).$$
 
-**Definition 3.1 (step relation, `step`).** Drop the counter and $f$, and let the
+**Definition 2.1 (step relation, `step`).** Drop the counter and $f$, and let the
 copy count $k \in \mathbb{N}$ be arbitrary. Define $S \to T$ inductively by
 
 $$\frac{S \neq []\quad m = 0}{S \to \mathrm{butlast}\ S}\ (\mathrm{drop0}),
@@ -122,162 +62,175 @@ with $r = \mathrm{badroot}\ S$, $B = \mathrm{drop}\ r\ (\mathrm{butlast}\ S)$ an
 $$\mathrm{badset}\ S = \lbrace p \mid p < \mathrm{length}\ S - 1 \ \wedge\ S \mathbin{!} p < m\rbrace,
 \qquad \mathrm{badroot}\ S = \max(\mathrm{badset}\ S).$$
 
-Rule $\mathrm{drop0}$ is the $m = 0$ branch of $\mathrm{expand}$, and rule
+Rule $\mathrm{drop0}$ is the $m = 0$ branch of $\mathrm{expand}$, rule
 $\mathrm{bad}$ (for $k = f(n)$) is the $m > 0$ branch; $\to$ is the sequence part
-of one $\mathrm{expand}$ step.
+of one $\mathrm{expand}$ step. Termination of $\mathrm{expand}$ for any $f, n$
+reduces to nonexistence of an infinite chain $S^{(0)} \to S^{(1)} \to \cdots$.
 
-Termination of $\mathrm{expand}$ for any $f, n$ reduces to nonexistence of an
-infinite chain $S^{(0)} \to S^{(1)} \to \cdots$, since the sequence part of any
-expansion run is such a chain.
+## 3. Cantor normal forms and their order
 
-## 4. The value order $(\mathsf{hord}, \prec)$
+**Definition 3.1 (terms, `ord`).** Ordinals below $\varepsilon_0$ are the binary
+trees
 
-**Definition 4.1 (values, `hord`).** $\mathsf{hord}$ is the set equipped with a
-bijection
+$$\mathsf{ord} ::= Z \ \mid\ E\ a\ b \qquad (a, b \in \mathsf{ord}),$$
 
-$$H : \mathcal{M}_{\mathrm{fin}}(\mathsf{hord}) \to \mathsf{hord}$$
+read as $Z = 0$ and $E\ a\ b = \omega^{a} + b$. The *leading exponent* is
+$\mathrm{lead}\ Z = Z$, $\mathrm{lead}\ (E\ a\ b) = a$.
 
-with inverse $H^{-1} : \mathsf{hord} \to \mathcal{M}_{\mathrm{fin}}(\mathsf{hord})$ (the Isabelle `un_H`), i.e.
+**Definition 3.2 (order, `olt` / $\prec$).** The recursive lexicographic order:
 
-$$H^{-1}(H(M)) = M \qquad\text{and}\qquad H(H^{-1}(v)) = v.$$
+$$Z \prec E\ a\ b, \qquad
+E\ a\ b \prec E\ c\ d \iff a \prec c \ \vee\ (a = c \ \wedge\ b \prec d),$$
 
-(Such a set exists and is unique up to isomorphism as the initial algebra of
-$X \mapsto \mathcal{M}_{\mathrm{fin}}(X)$; this is the Isabelle `datatype`.) Put
-$\mathbf{0} = H(\lbrace\lbrace\rbrace\rbrace)$. The *children* of $v$ are the
-elements of $H^{-1}(v)$.
+and nothing is $\prec Z$. Write $x \preceq y$ for $x \prec y \vee x = y$. This is
+a linear order (`olt_trans`, `olt_total`).
 
-**Definition 4.2 (order, `hlt`).** On $\mathsf{hord}$,
+**Definition 3.3 (normal form, `cnf`).** A term is in *Cantor normal form* when
+the exponents are non-increasing left to right and hereditarily normal:
 
-$$H(M) \prec H(N) \iff \mathrm{multp}\ (\prec)\ M\ N.$$
+$$\mathrm{cnf}\ Z, \qquad \mathrm{cnf}\ (E\ a\ b) \iff \mathrm{cnf}\ a \ \wedge\ \mathrm{cnf}\ b \ \wedge\ (b = Z \ \vee\ \mathrm{lead}\ b \preceq a).$$
 
-(The elements compared by $\mathrm{multp}\ (\prec)$ are children, hence strictly
-smaller values, so the recursion is well defined.)
+(Some ordering is essential: on *non*-CNF terms $\prec$ is **not** well-founded —
+e.g. $E (E Z Z) Z \succ E Z (E (E Z Z) Z) \succ \cdots$ is an infinite descent of
+"ascending-exponent" terms. CNF rules this out.)
 
-**Proposition 4.3 (`wfP_hlt`).** $\prec$ is well-founded.
+**Proposition 3.4 (`wfP_R`).** $\prec$ is well-founded on CNF terms; i.e. the
+relation $R\ x\ y \iff \mathrm{cnf}\ x \wedge \mathrm{cnf}\ y \wedge x \prec y$
+is well-founded.
 
-*Proof.* By structural induction on $\mathsf{hord}$, with Proposition 2.3 at the
-inductive step. $\square$
+*Proof.* Let $R$-accessibility be `accp R`. We show every CNF term is accessible
+by a double induction (no multiset library is used): the auxiliary
+`accp_R_E` proves, by induction on the accessibility of the exponent $a$ and a
+nested induction on the tail $b$, that $E\ a\ b$ is accessible whenever $a$ and
+$b$ are; `accp_R_all` then covers all CNF terms by structure, and non-CNF terms
+are accessible vacuously. $\square$
 
-**Example 4.4.** With $\mathbf{1} = H(\lbrace\lbrace \mathbf{0} \rbrace\rbrace)$,
-$\mathbf{2} = H(\lbrace\lbrace \mathbf{0}, \mathbf{0} \rbrace\rbrace)$,
-$\boldsymbol{\omega} = H(\lbrace\lbrace \mathbf{1} \rbrace\rbrace)$: take
-$I = \lbrace\lbrace\rbrace\rbrace$, $J = \lbrace\lbrace \mathbf{1} \rbrace\rbrace$,
-$K = \lbrace\lbrace \mathbf{0}, \mathbf{0} \rbrace\rbrace$ to get
-$\mathbf{2} \prec \boldsymbol{\omega}$.
+## 4. The measure $o$ (`omap`)
 
-**Remark 4.5.** Under $H(\lbrace\lbrace a_1, \dots, a_k \rbrace\rbrace) \mapsto
-\omega^{a_1} \oplus \cdots \oplus \omega^{a_k}$ (natural sum),
-$(\mathsf{hord}, \prec) \cong (\varepsilon_0, <)$. Not used below.
+**Definition 4.1 (insertion, `ins`).** $\mathrm{ins}\ e\ y$ inserts the single
+term $\omega^{e}$ into a CNF $y$ at its sorted position:
 
-## 5. The measure $o$ (`omap`)
+$$\mathrm{ins}\ e\ Z = E\ e\ Z, \qquad
+\mathrm{ins}\ e\ (E\ a\ b) = \begin{cases} E\ e\ (E\ a\ b) & a \prec e \\ E\ a\ (\mathrm{ins}\ e\ b) & \neg (a \prec e). \end{cases}$$
 
-**Definition 5.1 (`omap`).** With $\mathit{tw} = \mathrm{takeWhile}\ (\lambda x.\
-a < x)\ \mathit{rest}$ and $\mathit{dw} = \mathrm{dropWhile}\ (\lambda x.\ a < x)\
-\mathit{rest}$, and writing $o(\mathit{dw}) = H(D)$,
+It preserves normal form (`cnf_ins`) and commutes (`ins_comm`:
+$\mathrm{ins}\ e\ (\mathrm{ins}\ f\ y) = \mathrm{ins}\ f\ (\mathrm{ins}\ e\ y)$).
 
-$$o([]) = H(\lbrace\lbrace\rbrace\rbrace), \qquad
-o(a \mathbin{::} \mathit{rest}) = H\big(\lbrace\lbrace o(\mathit{tw}) \rbrace\rbrace \uplus D\big).$$
+**Definition 4.2 (measure, `omap`).** Read the sequence from the left; the first
+entry $a$ contributes the term $\omega^{o(\mathit{inside})}$ where
+$\mathit{inside}$ is the maximal following run of entries $> a$ (its descendant
+forest), inserted into the value of the rest:
 
-Equivalently $o$ is the *forest value*: position $i$ has parent
-$\max\lbrace j \mid j < i \wedge S \mathbin{!} j < S \mathbin{!} i\rbrace$ (a root
-if none); each tree contributes $H(\text{children})$ and a forest is combined by
-$\uplus$. This parent rule coincides with the bad root.
+$$o([]) = Z, \qquad o(a \mathbin{::} \mathit{rest}) = \mathrm{ins}\ \big(o(\mathit{tw})\big)\ \big(o(\mathit{dw})\big),$$
+$$\mathit{tw} = \mathrm{takeWhile}\ (\lambda x.\ a < x)\ \mathit{rest}, \qquad \mathit{dw} = \mathrm{dropWhile}\ (\lambda x.\ a < x)\ \mathit{rest}.$$
 
-**Computed values** (Isabelle): $o([0]) = H(\lbrace\lbrace \mathbf{0} \rbrace\rbrace) =
-\mathbf{1}$; $o(\underbrace{[0, \dots, 0]}_{k}) = \mathbf{k}$; $o([0,1]) =
-\boldsymbol{\omega}$; $o([0,1,1]) = \boldsymbol{\omega}^2$; $o([0,1,2]) =
-\boldsymbol{\omega}^{\boldsymbol{\omega}}$.
+**Proposition 4.3 (`cnf_omap`).** $\mathrm{cnf}\ (o(S))$ for every $S$. (So $o$
+always lands in the well-founded domain of Proposition 3.4.)
 
-## 6. Each step decreases $o$
+*Proof.* Induction following $o$, using `cnf_ins`. $\square$
 
-**Lemma 6.1 (`omap_snoc_increases`).** $\quad o(C) \prec o(C \mathbin{@} [m]).$
+## 5. Each step decreases the measure
 
-*Proof.* Induction along the recursion of $o$: appending $m$ either adjoins a
-top-level child $\mathbf{0}$ or enlarges one child; both are $\prec$-increases.
-$\square$
+**Lemma 5.1 (`olt_ins_self`).** $\quad y \prec \mathrm{ins}\ e\ y.$ Inserting a
+term strictly increases the value.
 
-**Proposition 6.2 (`m_drop0_decreases`).** $\quad S \neq [] \ \wedge\
-\mathrm{last}\ S = 0 \implies o(\mathrm{butlast}\ S) \prec o(S).$
+**Lemma 5.2 (`omap_snoc0`).** $\quad o(P \mathbin{@} [0]) = \mathrm{ins}\ Z\ (o(P)).$
+A trailing $0$ inserts the least term $\omega^{0}$. (Proof by induction, using
+`ins_comm`.)
 
-*Proof.* Write $o(\mathrm{butlast}\ S) = H(D)$. By `omap_snoc0`,
-$$o(S) = o((\mathrm{butlast}\ S) \mathbin{@} [0]) = H(\lbrace\lbrace \mathbf{0} \rbrace\rbrace \uplus D),$$
-and removing the single element $\mathbf{0}$ is a $\mathrm{multp}$-step. $\square$
+**Proposition 5.3 (drop-zero, `m_drop0`).** If $S \neq []$ and
+$\mathrm{last}\ S = 0$, then $o(\mathrm{butlast}\ S) \prec o(S)$.
 
-For the bad step set $r = \mathrm{badroot}\ S$, $v = S \mathbin{!} r$,
-$m = \mathrm{last}\ S$, $B = \mathrm{drop}\ r\ (\mathrm{butlast}\ S)$. Then
-$B = v \mathbin{::} B_t$ with $\forall x \in B_t.\ v < x$ (indeed $m \le x$), and
-$S = (\mathrm{take}\ r\ S) \mathbin{@} (v \mathbin{::} B_t) \mathbin{@} [m]$.
+*Proof.* $S = \mathrm{butlast}\ S \mathbin{@} [0]$, so $o(S) = \mathrm{ins}\ Z\ (o(\mathrm{butlast}\ S))$
+by 5.2, and $o(\mathrm{butlast}\ S) \prec o(S)$ by 5.1. $\square$
 
-**Lemma 6.3 (`omap_rep`).** $\ \forall x \in B_t.\ v < x \implies$
-$$o(\mathrm{concat}(\mathrm{replicate}\ k\ (v \mathbin{::} B_t))) = H\big(\underbrace{\lbrace\lbrace o(B_t), \dots, o(B_t) \rbrace\rbrace}_{k}\big).$$
+**Lemma 5.4 (`ins_mono2`).** If $\mathrm{cnf}\ y$, $\mathrm{cnf}\ y'$ and
+$y \prec y'$, then $\mathrm{ins}\ e\ y \prec \mathrm{ins}\ e\ y'$.
 
-**Lemma 6.4 (`omap_BfM`).** $\ \forall x \in B_t.\ v < x,\ \ v < m \implies$
-$$o((v \mathbin{::} B_t) \mathbin{@} [m]) = H(\lbrace\lbrace o(B_t \mathbin{@} [m]) \rbrace\rbrace).$$
+**Lemma 5.5 (`omap_snoc_increase`).** $\quad o(C) \prec o(C \mathbin{@} [m])$ for
+every $m$. (Induction on $o$; the recursive case uses Lemma 5.4.)
 
-**Lemma 6.5 (`omap_core`).** $\ \forall x \in B_t.\ v < x,\ \ v < m \implies$
-$$o(\mathrm{concat}(\mathrm{replicate}\ (k{+}1)\ (v \mathbin{::} B_t))) \prec o((v \mathbin{::} B_t) \mathbin{@} [m]).$$
+For the bad step, write $S = G \mathbin{@} (v \mathbin{::} B_t) \mathbin{@} [m]$
+where $r = \mathrm{badroot}\ S$, $v = S \mathbin{!} r$, $m = \mathrm{last}\ S$,
+$B = v \mathbin{::} B_t = \mathrm{drop}\ r\ (\mathrm{butlast}\ S)$. Maximality of
+$r$ gives $\forall x \in B_t.\ m \le x$, hence $v < x$, and $v < m$.
 
-*Proof.* By Lemma 6.3 the left side is $H(\underbrace{\lbrace\lbrace o(B_t), \dots,
-o(B_t) \rbrace\rbrace}_{k+1})$; by Lemma 6.4 the right side is $H(\lbrace\lbrace o(B_t
-\mathbin{@} [m]) \rbrace\rbrace)$. Since $o(B_t) \prec o(B_t \mathbin{@} [m])$ (Lemma
-6.1), one element is replaced by $k{+}1$ strictly smaller ones — a
-$\mathrm{multp}$-step. $\square$
+**Lemma 5.6 (`omap_rep`).** If $\forall x \in B_t.\ v < x$, then $k$ copies of
+$B$ give $k$ equal terms:
+$$o\big(\mathrm{concat}(\mathrm{replicate}\ k\ (v \mathbin{::} B_t))\big) = (\mathrm{ins}\ (o(B_t)))^{k}\ Z.$$
 
-**Lemma 6.6 (`omap_BADCTX`).** For all $G$, under the hypotheses on $B_t$,
-$$o(G \mathbin{@} \mathrm{concat}(\mathrm{replicate}\ (k{+}1)\ (v \mathbin{::} B_t))) \prec o(G \mathbin{@} (v \mathbin{::} B_t) \mathbin{@} [m]).$$
+**Lemma 5.7 (`omap_BfM`).** If $\forall x \in B_t.\ v < x$ and $v < m$, the
+appended $m$ falls inside $v$'s subtree, giving a single term:
+$$o\big((v \mathbin{::} B_t) \mathbin{@} [m]\big) = E\ \big(o(B_t \mathbin{@} [m])\big)\ Z.$$
+
+**Lemma 5.8 (core decrease, `omap_core`).** Under the same hypotheses,
+$$o\big(\mathrm{concat}(\mathrm{replicate}\ (k{+}1)\ (v \mathbin{::} B_t))\big) \prec o\big((v \mathbin{::} B_t) \mathbin{@} [m]\big).$$
+
+*Proof.* The left side is $(\mathrm{ins}\ \beta)^{k+1} Z$ with $\beta = o(B_t)$
+(5.6) — a CNF all of whose exponents equal $\beta$; the right side is
+$E\ \gamma\ Z$ with $\gamma = o(B_t \mathbin{@} [m])$ (5.7). Since
+$\beta \prec \gamma$ (5.5), every such left-hand term has leading exponent
+$\beta \prec \gamma$, so it is $\prec E\ \gamma\ Z$ (`funpow_ins_lt`). $\square$
+
+**Lemma 5.9 (with context, `omap_BADCTX`).** For every good part $G$,
+$$o\big(G \mathbin{@} \mathrm{concat}(\mathrm{replicate}\ (k{+}1)\ (v \mathbin{::} B_t))\big) \prec o\big(G \mathbin{@} (v \mathbin{::} B_t) \mathbin{@} [m]\big).$$
 
 *Proof.* Induction on $\mathrm{length}\ G$. Peeling $G = g \mathbin{::} G'$, the
-$o$-recursion splits $G' \mathbin{@} (\cdots)$ by $\mathrm{takeWhile} /
-\mathrm{dropWhile}$ at $g$: either it recurses on a shorter context (congruence
-under $H$), or, when $g$ sits below the bad part, it reduces to Lemma 6.5. Base
-$G = []$ is Lemma 6.5. $\square$
+recursion of $o$ either confines the comparison inside $G$ (reducing to a shorter
+context, congruence via Lemma 5.4) or, once $g$ sits below the bad part, reduces
+to the core (Lemma 5.8). Base $G = []$ is Lemma 5.8. $\square$
 
-**Proposition 6.7 (`m_bad_decreases`).** $\ S \neq [] \ \wedge\ 0 <
-\mathrm{last}\ S \ \wedge\ \mathrm{badset}\ S \neq \emptyset \implies$
-$$o((\mathrm{take}\ r\ S) \mathbin{@} \mathrm{concat}(\mathrm{replicate}\ (k{+}1)\ (\mathrm{drop}\ r\ (\mathrm{butlast}\ S)))) \prec o(S).$$
+**Proposition 5.10 (bad step, `m_bad`).** If $S \neq []$, $\mathrm{last}\ S > 0$
+and $\mathrm{badset}\ S \neq \emptyset$, then for every $k$
+$$o\big((\mathrm{take}\ r\ S) \mathbin{@} \mathrm{concat}(\mathrm{replicate}\ (k{+}1)\ (\mathrm{drop}\ r\ (\mathrm{butlast}\ S)))\big) \prec o(S).$$
 
-*Proof.* $\mathrm{badset}\ S$ is finite and nonempty, so $r$ is defined; rewriting
-$S = (\mathrm{take}\ r\ S) \mathbin{@} (v \mathbin{::} B_t) \mathbin{@} [m]$ reduces
-the goal to Lemma 6.6. $\square$
+*Proof.* $\mathrm{badset}\ S$ is finite and nonempty, so $r$ is well defined;
+rewriting $S = (\mathrm{take}\ r\ S) \mathbin{@} (v \mathbin{::} B_t) \mathbin{@} [m]$
+reduces the goal to Lemma 5.9. $\square$
 
-## 7. Termination
+## 6. Termination
 
-**Theorem 7.1 (`m_step_decreases`).** $\quad S \to T \implies o(T) \prec o(S).$
+**Theorem 6.1 (`m_step_decreases`).** $\quad S \to T \implies o(T) \prec o(S).$
 
-*Proof.* Cases drop0 / bad are Propositions 6.2 / 6.7. $\square$
+*Proof.* The two cases are Propositions 5.3 and 5.10. $\square$
 
-**Theorem 7.2 (`m_termination`).** $\quad \mathrm{wf}\ \lbrace (T, S) \mid S \to T\rbrace.$
+**Theorem 6.2 (`m_termination`).** $\quad \mathrm{wf}\ \lbrace (T, S) \mid S \to T\rbrace.$
 Equivalently (`m_no_infinite_expansion`), no $\mathrm{Seq}$ has $\mathrm{Seq}(i)
 \to \mathrm{Seq}(i{+}1)$ for all $i$.
 
-*Proof.* $\lbrace (T, S) \mid S \to T\rbrace \subseteq o^{-1}(\prec)$ by Theorem
-7.1, and $o^{-1}(\prec)$ is well-founded by Proposition 4.3 (inverse image of a
-well-founded relation). $\square$
+*Proof.* By Theorem 6.1 and $\mathrm{cnf}\ (o(\cdot))$ (Prop. 4.3),
+$\lbrace (T, S) \mid S \to T\rbrace \subseteq o^{-1}(R)$; and $o^{-1}(R)$ is
+well-founded by Proposition 3.4 (inverse image of a well-founded relation).
+$\square$
 
-## 8. Correspondence with the Isabelle development
+## 7. Correspondence with the Isabelle development
 
-Statements: `prss_paper.thy` (`p_*`, `sorry`); proofs: `m_*` in
-`prss_mechanized.thy`. Build: `isbman build -d . -v PRSS`.
+All facts are in [`prss_nomultiset.thy`](https://github.com/koteitan/prss-proof/blob/without-multiset/prss_nomultiset.thy)
+(`imports Main`; no `HOL-Library.Multiset`). Build with `isbman build -d . -v PRSS`.
 
 | Object | Isabelle | source |
 |---|---|---|
-| $\mathrm{multp}$ (Def. 2.2) | `multp` | `HOL-Library.Multiset` |
-| Prop. 2.3 | `wfp_multp` | `HOL-Library.Multiset` |
-| $\to$ (Def. 3.1) | `step` (`drop0`, `bad`) | [prss_defs.thy:76](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L76) |
-| $\mathrm{badset}$ / $\mathrm{badroot}$ | `badset` / `badroot` | [prss_defs.thy:67](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L67), [70](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L70) |
-| $\mathsf{hord}$, $H$ | `datatype hord = H "hord multiset"` | [prss_ordinal.thy:16](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L16) |
-| $\prec$ | `hlt` | [prss_ordinal.thy:20](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L20) |
-| Prop. 4.3 | `wfP_hlt` | [prss_ordinal.thy:199](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L199) |
-| $o$ (Def. 5.1) | `omap` | [prss_defs.thy:40](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L40) |
-| Lemma 6.1 | `omap_snoc_increases` | [prss_mechanized.thy:106](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L106) |
-| Prop. 6.2 | `m_drop0_decreases` | [prss_mechanized.thy:161](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L161) |
-| Lemma 6.3 | `omap_rep` | [prss_mechanized.thy:204](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L204) |
-| Lemma 6.4 | `omap_BfM` | [prss_mechanized.thy:228](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L228) |
-| Lemma 6.5 | `omap_core` | [prss_mechanized.thy:246](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L246) |
-| Lemma 6.6 | `omap_BADCTX` | [prss_mechanized.thy:303](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L303) |
-| Prop. 6.7 | `m_bad_decreases` | [prss_mechanized.thy:426](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L426) |
-| Thm. 7.1 | `m_step_decreases` | [prss_mechanized.thy:494](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L494) |
-| Thm. 7.2 | `m_termination`, `m_no_infinite_expansion` | [prss_mechanized.thy:506](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L506), [515](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L515) |
+| $\mathsf{ord}$ ($Z$, $E\ a\ b$) | `datatype ord = Z \| E ord ord` | [prss_nomultiset.thy:14](https://github.com/koteitan/prss-proof/blob/without-multiset/prss_nomultiset.thy#L14) |
+| $\prec$ | `olt` (`<o`) | [prss_nomultiset.thy:18](https://github.com/koteitan/prss-proof/blob/without-multiset/prss_nomultiset.thy#L18) |
+| Def. 3.3 | `cnf` | [prss_nomultiset.thy:34](https://github.com/koteitan/prss-proof/blob/without-multiset/prss_nomultiset.thy#L34) |
+| Prop. 3.4 | `wfP_R` | [prss_nomultiset.thy:235](https://github.com/koteitan/prss-proof/blob/without-multiset/prss_nomultiset.thy#L235) |
+| Def. 4.1 | `ins` | [prss_nomultiset.thy:240](https://github.com/koteitan/prss-proof/blob/without-multiset/prss_nomultiset.thy#L240) |
+| $o$ (Def. 4.2) | `omap` | [prss_nomultiset.thy:332](https://github.com/koteitan/prss-proof/blob/without-multiset/prss_nomultiset.thy#L332) |
+| Prop. 4.3 | `cnf_omap` | [prss_nomultiset.thy:342](https://github.com/koteitan/prss-proof/blob/without-multiset/prss_nomultiset.thy#L342) |
+| $\mathrm{badset}$ / $\mathrm{badroot}$ | `badset` / `badroot` | [prss_nomultiset.thy:780](https://github.com/koteitan/prss-proof/blob/without-multiset/prss_nomultiset.thy#L780), [783](https://github.com/koteitan/prss-proof/blob/without-multiset/prss_nomultiset.thy#L783) |
+| $\to$ (Def. 2.1) | `step` (`drop0`, `bad`) | [prss_nomultiset.thy:844](https://github.com/koteitan/prss-proof/blob/without-multiset/prss_nomultiset.thy#L844) |
+| Lemma 5.1 | `olt_ins_self` | [prss_nomultiset.thy:353](https://github.com/koteitan/prss-proof/blob/without-multiset/prss_nomultiset.thy#L353) |
+| Lemma 5.2 | `omap_snoc0` | [prss_nomultiset.thy:368](https://github.com/koteitan/prss-proof/blob/without-multiset/prss_nomultiset.thy#L368) |
+| Prop. 5.3 | `m_drop0` | [prss_nomultiset.thy:392](https://github.com/koteitan/prss-proof/blob/without-multiset/prss_nomultiset.thy#L392) |
+| Lemma 5.4 | `ins_mono2` | [prss_nomultiset.thy:415](https://github.com/koteitan/prss-proof/blob/without-multiset/prss_nomultiset.thy#L415) |
+| Lemma 5.5 | `omap_snoc_increase` | [prss_nomultiset.thy:494](https://github.com/koteitan/prss-proof/blob/without-multiset/prss_nomultiset.thy#L494) |
+| Lemma 5.6 | `omap_rep` | [prss_nomultiset.thy:562](https://github.com/koteitan/prss-proof/blob/without-multiset/prss_nomultiset.thy#L562) |
+| Lemma 5.7 | `omap_BfM` | [prss_nomultiset.thy:584](https://github.com/koteitan/prss-proof/blob/without-multiset/prss_nomultiset.thy#L584) |
+| Lemma 5.8 | `omap_core` | [prss_nomultiset.thy:625](https://github.com/koteitan/prss-proof/blob/without-multiset/prss_nomultiset.thy#L625) |
+| Lemma 5.9 | `omap_BADCTX` | [prss_nomultiset.thy:661](https://github.com/koteitan/prss-proof/blob/without-multiset/prss_nomultiset.thy#L661) |
+| Prop. 5.10 | `m_bad` | [prss_nomultiset.thy:786](https://github.com/koteitan/prss-proof/blob/without-multiset/prss_nomultiset.thy#L786) |
+| Thm. 6.1 | `m_step_decreases` | [prss_nomultiset.thy:851](https://github.com/koteitan/prss-proof/blob/without-multiset/prss_nomultiset.thy#L851) |
+| Thm. 6.2 | `m_termination`, `m_no_infinite_expansion` | [prss_nomultiset.thy:863](https://github.com/koteitan/prss-proof/blob/without-multiset/prss_nomultiset.thy#L863), [878](https://github.com/koteitan/prss-proof/blob/without-multiset/prss_nomultiset.thy#L878) |
 
 ---
 
