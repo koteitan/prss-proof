@@ -398,4 +398,96 @@ proof -
   thus ?thesis using olt_ins_self by metis
 qed
 
+subsection \<open>Monotonicity of insertion\<close>
+
+lemma Z_olt_ins: "Z <o ins e y"
+  by (cases y) auto
+
+lemma ole_not: "e \<le>o a \<Longrightarrow> \<not> a <o e"
+  using olt_trans olt_irrefl by blast
+
+lemma ins_top: "y = Z \<or> lead y <o e \<Longrightarrow> ins e y = E e y"
+  by (cases y) auto
+
+lemma lead_ins_ge: "b = Z \<or> lead b \<le>o a \<Longrightarrow> lead (ins a b) = a"
+  by (cases b) (auto simp: ole_not)
+
+lemma ins_mono2:
+  "cnf y \<Longrightarrow> cnf y' \<Longrightarrow> y <o y' \<Longrightarrow> ins e y <o ins e y'"
+proof (induction y' arbitrary: y)
+  case Z
+  then show ?case using not_olt_Z by blast
+next
+  case (E a' b')
+  from \<open>cnf (E a' b')\<close> have ca': "cnf a'" and cb': "cnf b'"
+    and bd': "b' = Z \<or> lead b' \<le>o a'" by auto
+  show ?case
+  proof (cases "a' <o e")
+    case True
+    have ylead: "y = Z \<or> lead y <o e"
+    proof (cases y)
+      case Z thus ?thesis by simp
+    next
+      case (E a b)
+      from \<open>y <o E a' b'\<close> E have "a <o a' \<or> (a = a' \<and> b <o b')" by simp
+      hence "a \<le>o a'" by auto
+      hence "a <o e" using True ole_olt_trans by blast
+      thus ?thesis using E by simp
+    qed
+    have ytop: "ins e y = E e y" using ins_top ylead by blast
+    have y'top: "ins e (E a' b') = E e (E a' b')" using True by (simp add: ins_top)
+    show ?thesis using ytop y'top \<open>y <o E a' b'\<close> by simp
+  next
+    case False
+    hence ea': "e \<le>o a'" using olt_total by blast
+    have y'ins: "ins e (E a' b') = E a' (ins e b')" using False by simp
+    show ?thesis
+    proof (cases y)
+      case Z
+      have "Z <o ins e b'" by (rule Z_olt_ins)
+      thus ?thesis using ea' y'ins Z by (cases "e <o a'") auto
+    next
+      case (E a b)
+      from \<open>y <o E a' b'\<close> E have disj: "a <o a' \<or> (a = a' \<and> b <o b')" by simp
+      from \<open>cnf y\<close> E have cb: "cnf b" by auto
+      show ?thesis
+      proof (cases "a = a'")
+        case True
+        with disj have bb': "b <o b'" using olt_irrefl by auto
+        have "\<not> a <o e" using ea' True ole_not by simp
+        hence ins_y: "ins e (E a b) = E a (ins e b)" by simp
+        have "ins e b <o ins e b'" using E.IH cb cb' bb' by blast
+        thus ?thesis using ins_y y'ins True E by simp
+      next
+        case False
+        with disj have aa': "a <o a'" by auto
+        show ?thesis
+        proof (cases "a <o e")
+          case True
+          have it: "ins e (E a b) = E e (E a b)" using True by (simp add: ins_top)
+          show ?thesis
+          proof (cases "e <o a'")
+            case True
+            have "ins e (E a b) <o E a' (ins e b')" using it \<open>e <o a'\<close> by simp
+            thus ?thesis using y'ins E by simp
+          next
+            case False
+            with ea' have eq: "e = a'" by auto
+            have ld: "lead (ins e b') = a'" using bd' eq by (simp add: lead_ins_ge)
+            have "ins e b' \<noteq> Z" using Z_olt_ins[of e b'] by auto
+            then obtain c where "ins e b' = E a' c" using ld by (cases "ins e b'") auto
+            hence "ins e (E a b) <o E a' (ins e b')" using it eq aa' by simp
+            thus ?thesis using y'ins E by simp
+          qed
+        next
+          case False
+          hence "ins e (E a b) = E a (ins e b)" by simp
+          moreover have "E a (ins e b) <o E a' (ins e b')" using aa' by simp
+          ultimately show ?thesis using y'ins E by simp
+        qed
+      qed
+    qed
+  qed
+qed
+
 end
