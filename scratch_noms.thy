@@ -235,56 +235,95 @@ qed
 theorem wfP_R: "wfP R"
   by (rule accp_wfpI) (rule allI, rule accp_R_any)
 
-section \<open>Natural (Hessenberg) sum as a descending merge\<close>
+section \<open>Inserting a principal term \<open>\<omega>\<^bsup>e\<^esup>\<close> into a CNF\<close>
 
-fun nsum :: "ord \<Rightarrow> ord \<Rightarrow> ord" where
-  "nsum Z y = y"
-| "nsum (E a b) Z = E a b"
-| "nsum (E a b) (E c d) =
-     (if a <o c then E c (nsum (E a b) d) else E a (nsum b (E c d)))"
+fun ins :: "ord \<Rightarrow> ord \<Rightarrow> ord" where
+  "ins e Z = E e Z"
+| "ins e (E a b) = (if a <o e then E e (E a b) else E a (ins e b))"
 
-lemma nsum_Zr: "nsum x Z = x"
-  by (cases x) auto
+lemma lead_ins: "lead (ins e y) = e \<or> lead (ins e y) = lead y"
+  by (cases y) auto
 
-lemma bounded_nsum:
-  "(p = Z \<or> lead p \<le>o a) \<Longrightarrow> (q = Z \<or> lead q \<le>o a)
-     \<Longrightarrow> (nsum p q = Z \<or> lead (nsum p q) \<le>o a)"
-proof (induction p q rule: nsum.induct)
-  case (1 y) then show ?case by simp
+lemma cnf_ins: "cnf e \<Longrightarrow> cnf y \<Longrightarrow> cnf (ins e y)"
+proof (induction y)
+  case Z
+  then show ?case by simp
 next
-  case (2 a' b') then show ?case by simp
-next
-  case (3 a' b' c' d') then show ?case by auto
-qed
-
-lemma cnf_nsum: "cnf p \<Longrightarrow> cnf q \<Longrightarrow> cnf (nsum p q)"
-proof (induction p q rule: nsum.induct)
-  case (1 y) then show ?case by simp
-next
-  case (2 a' b') then show ?case by simp
-next
-  case (3 a' b' c' d')
-  from \<open>cnf (E a' b')\<close> have ca': "cnf a'" and cb': "cnf b'"
-    and bb': "b' = Z \<or> lead b' \<le>o a'" by auto
-  from \<open>cnf (E c' d')\<close> have cc': "cnf c'" and cd': "cnf d'"
-    and bd': "d' = Z \<or> lead d' \<le>o c'" by auto
+  case (E a b)
+  from \<open>cnf (E a b)\<close> have ca: "cnf a" and cb: "cnf b"
+    and bnd: "b = Z \<or> lead b \<le>o a" by auto
   show ?case
-  proof (cases "a' <o c'")
+  proof (cases "a <o e")
     case True
-    have rec: "cnf (nsum (E a' b') d')" using 3 cd' True by simp
-    have "lead (E a' b') \<le>o c'" using True by simp
-    hence b1: "E a' b' = Z \<or> lead (E a' b') \<le>o c'" by simp
-    have "nsum (E a' b') d' = Z \<or> lead (nsum (E a' b') d') \<le>o c'"
-      using bounded_nsum[OF b1] bd' by simp
-    then show ?thesis using True cc' rec by auto
+    then show ?thesis using \<open>cnf e\<close> \<open>cnf (E a b)\<close> by auto
   next
     case False
-    hence "c' \<le>o a'" using olt_total by blast
-    have rec: "cnf (nsum b' (E c' d'))" using 3 cb' False by simp
-    have b2: "E c' d' = Z \<or> lead (E c' d') \<le>o a'" using \<open>c' \<le>o a'\<close> by simp
-    have "nsum b' (E c' d') = Z \<or> lead (nsum b' (E c' d')) \<le>o a'"
-      using bounded_nsum[OF bb' b2] by simp
-    then show ?thesis using False ca' rec by auto
+    hence ea: "e \<le>o a" using olt_total by blast
+    have cib: "cnf (ins e b)" using E.IH \<open>cnf e\<close> cb by blast
+    have "ins e b = Z \<or> lead (ins e b) \<le>o a"
+    proof -
+      have "lead (ins e b) = e \<or> lead (ins e b) = lead b" by (rule lead_ins)
+      then show ?thesis using ea bnd by auto
+    qed
+    then show ?thesis using False ca cib by auto
+  qed
+qed
+
+text \<open>Inserting commutes: order of insertion does not matter.\<close>
+lemma ins_comm: "ins e (ins f y) = ins f (ins e y)"
+proof (induction y)
+  case Z
+  show ?case
+  proof (cases "e <o f")
+    case True
+    hence "\<not> f <o e" using olt_trans olt_irrefl by blast
+    then show ?thesis using True by simp
+  next
+    case False
+    show ?thesis
+    proof (cases "f <o e")
+      case True
+      hence "\<not> e <o f" using olt_trans olt_irrefl by blast
+      then show ?thesis using True by simp
+    next
+      case False
+      with \<open>\<not> e <o f\<close> have "e = f" using olt_total by blast
+      then show ?thesis by simp
+    qed
+  qed
+next
+  case (E a b)
+  consider (bb) "\<not> a <o e \<and> \<not> a <o f" | (ee) "a <o e \<and> a <o f"
+    | (ef) "a <o e \<and> \<not> a <o f" | (fe) "\<not> a <o e \<and> a <o f" by blast
+  then show ?case
+  proof cases
+    case bb
+    then show ?thesis by (simp add: E.IH)
+  next
+    case ee
+    consider "e <o f" | "f <o e" | "e = f" using olt_total by blast
+    then show ?thesis
+    proof cases
+      case 1 hence "\<not> f <o e" using olt_trans olt_irrefl by blast
+      then show ?thesis using ee \<open>e <o f\<close> by simp
+    next
+      case 2 hence "\<not> e <o f" using olt_trans olt_irrefl by blast
+      then show ?thesis using ee \<open>f <o e\<close> by simp
+    next
+      case 3 then show ?thesis using ee by simp
+    qed
+  next
+    case ef
+    hence "f \<le>o a" using olt_total by blast
+    hence "f <o e" using ef ole_olt_trans by blast
+    hence "\<not> e <o f" using olt_trans olt_irrefl by blast
+    then show ?thesis using ef \<open>f <o e\<close> by simp
+  next
+    case fe
+    hence "e \<le>o a" using olt_total by blast
+    hence "e <o f" using fe ole_olt_trans by blast
+    hence "\<not> f <o e" using olt_trans olt_irrefl by blast
+    then show ?thesis using fe \<open>e <o f\<close> by simp
   qed
 qed
 
@@ -293,26 +332,19 @@ section \<open>The ordinal measure of a primitive sequence\<close>
 function omap :: "nat list \<Rightarrow> ord" where
   "omap [] = Z"
 | "omap (a # rest) =
-     nsum (E (omap (takeWhile (\<lambda>x. a < x) rest)) Z)
-          (omap (dropWhile (\<lambda>x. a < x) rest))"
+     ins (omap (takeWhile (\<lambda>x. a < x) rest)) (omap (dropWhile (\<lambda>x. a < x) rest))"
   by pat_completeness auto
 termination
   by (relation "measure length")
      (auto simp: le_imp_less_Suc length_takeWhile_le
             intro: le_less_trans[OF length_dropWhile_le])
 
-lemma cnf_E_Z: "cnf x \<Longrightarrow> cnf (E x Z)"
-  by simp
-
 lemma cnf_omap: "cnf (omap S)"
 proof (induction S rule: omap.induct)
   case 1 then show ?case by simp
 next
   case (2 a rest)
-  have "cnf (E (omap (takeWhile (\<lambda>x. a < x) rest)) Z)"
-    using 2(1) by (rule cnf_E_Z)
-  moreover have "cnf (omap (dropWhile (\<lambda>x. a < x) rest))" using 2(2) .
-  ultimately show ?case by (simp add: cnf_nsum)
+  show ?case using 2(1) 2(2) by (simp add: cnf_ins)
 qed
 
 end
