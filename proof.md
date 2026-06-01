@@ -74,8 +74,13 @@ trees
 
 $$\mathsf{ord} ::= Z \ \mid\ E\ a\ b \qquad (a, b \in \mathsf{ord}),$$
 
-read as $Z = 0$ and $E\ a\ b = \omega^{a} + b$. The *leading exponent* is
-$\mathrm{lead}\ Z = Z$, $\mathrm{lead}\ (E\ a\ b) = a$.
+read as $Z = 0$ and $E\ a\ b = \omega^{a} + b$. The *leading exponent*
+$\mathrm{lead}$ returns the exponent of the leading (largest) power of a term:
+
+$$\mathrm{lead}\ Z = Z, \qquad \mathrm{lead}\ (E\ a\ b) = a.$$
+
+E.g. for $\omega^{\omega} + \omega^{3} + 5 = E\ \omega\ (\omega^{3}+5)$ we have
+$\mathrm{lead} = \omega$, and for its tail $\omega^{3}+5$ we have $\mathrm{lead} = 3$.
 
 **Definition 3.2 (order, `olt` / $\prec$).** The recursive lexicographic order:
 
@@ -90,20 +95,85 @@ the exponents are non-increasing left to right and hereditarily normal:
 
 $$\mathrm{cnf}\ Z, \qquad \mathrm{cnf}\ (E\ a\ b) \iff \mathrm{cnf}\ a \ \wedge\ \mathrm{cnf}\ b \ \wedge\ (b = Z \ \vee\ \mathrm{lead}\ b \preceq a).$$
 
+The last condition $\mathrm{lead}\ b \preceq a$ says "the leading exponent of the
+tail $b$ does not exceed the current exponent $a$", i.e. it enforces the
+exponents being non-increasing left to right, one step at a time.
+
 (Some ordering is essential: on *non*-CNF terms $\prec$ is **not** well-founded —
 e.g. $E (E Z Z) Z \succ E Z (E (E Z Z) Z) \succ \cdots$ is an infinite descent of
 "ascending-exponent" terms. CNF rules this out.)
 
 **Proposition 3.4 (`wfP_R`).** $\prec$ is well-founded on CNF terms; i.e. the
-relation $R\ x\ y \iff \mathrm{cnf}\ x \wedge \mathrm{cnf}\ y \wedge x \prec y$
+relation
+
+$$R\ x\ y \iff \mathrm{cnf}\ x \ \wedge\ \mathrm{cnf}\ y \ \wedge\ x \prec y$$
+
 is well-founded.
 
-*Proof.* Let $R$-accessibility be `accp R`. We show every CNF term is accessible
-by a double induction (no multiset library is used): the auxiliary
-`accp_R_E` proves, by induction on the accessibility of the exponent $a$ and a
-nested induction on the tail $b$, that $E\ a\ b$ is accessible whenever $a$ and
-$b$ are; `accp_R_all` then covers all CNF terms by structure, and non-CNF terms
-are accessible vacuously. $\square$
+*Proof.* Let $\mathrm{Acc}\ x$ denote $R$-accessibility (`accp R`): the **least**
+predicate satisfying
+
+$$\mathrm{Acc}\ x \iff (\forall y.\ R\ y\ x \Rightarrow \mathrm{Acc}\ y).$$
+
+Since $\mathrm{wfP}\ R$ is equivalent to "$\mathrm{Acc}\ x$ for all $x$"
+(`accp_wfpI`), it suffices to prove **$\mathrm{Acc}\ x$ for every $x$**. We
+proceed in four steps.
+
+**Lemma A (`accp_R_Z`).** $\mathrm{Acc}\ Z$.
+No $x$ satisfies $x \prec Z$ (`not_olt_Z`), hence none satisfies $R\ x\ Z$; the
+accessibility condition holds vacuously, so $\mathrm{Acc}\ Z$.
+
+**Lemma B (`accp_R_E`).** If $\mathrm{Acc}\ a$ and $\mathrm{cnf}\ a$, then for
+every $b$ with $\mathrm{cnf}\ (E\ a\ b)$ and $\mathrm{Acc}\ b$ we have
+$\mathrm{Acc}\ (E\ a\ b)$.
+
+By well-founded induction on $\mathrm{Acc}\ a$. The induction hypothesis
+$\mathrm{IH}_a$: the claim holds for every $a'$ with $R\ a'\ a$ (i.e.
+$\mathrm{cnf}\ a'$, $\mathrm{cnf}\ a$, $a' \prec a$). First an auxiliary fact:
+
+$$\text{(tail)}\qquad \mathrm{cnf}\ d \ \wedge\ \mathrm{lead}\ d \prec a \ \Longrightarrow\ \mathrm{Acc}\ d.$$
+
+By structural induction on $d$.
+If $d = Z$, use Lemma A.
+If $d = E\ e\ d'$, then $\mathrm{cnf}$ gives $\mathrm{cnf}\ e$, $\mathrm{cnf}\ d'$,
+$(d' = Z \vee \mathrm{lead}\ d' \preceq e)$. From $\mathrm{lead}\ d = e \prec a$ we
+get $R\ e\ a$. Also $\mathrm{lead}\ d' \prec a$: if $d' = Z$ then
+$\mathrm{lead}\ d' = Z \prec a$ (here $a \neq Z$ since $e \prec a$); otherwise
+$\mathrm{lead}\ d' \preceq e \prec a$ by transitivity (`ole_olt_trans`). The
+structural IH on $d'$ gives $\mathrm{Acc}\ d'$. Applying $\mathrm{IH}_a$ to
+$R\ e\ a$ yields "Lemma B for $e$", so $\mathrm{cnf}\ (E\ e\ d')$ and
+$\mathrm{Acc}\ d'$ give $\mathrm{Acc}\ (E\ e\ d') = \mathrm{Acc}\ d$.
+
+Now the body, by well-founded induction on $\mathrm{Acc}\ b$. The induction
+hypothesis $\mathrm{IH}_b$: $\mathrm{Acc}\ (E\ a\ b')$ for every $b'$ with
+$R\ b'\ b$. By the definition of accessibility, $\mathrm{Acc}\ (E\ a\ b)$ follows
+once $\mathrm{Acc}\ z$ is shown for every $z$ with $R\ z\ (E\ a\ b)$. If
+$z = Z$, use Lemma A. If $z = E\ c\ d$, then $\mathrm{cnf}\ c$, $\mathrm{cnf}\ d$,
+$(d = Z \vee \mathrm{lead}\ d \preceq c)$, and $z \prec E\ a\ b$ means
+
+$$c \prec a \qquad\vee\qquad (c = a \ \wedge\ d \prec b).$$
+
+- If $c \prec a$: as in (tail), $\mathrm{lead}\ d \prec a$, so (tail) gives
+  $\mathrm{Acc}\ d$. Also $R\ c\ a$, so $\mathrm{IH}_a$ yields "Lemma B for $c$";
+  with $\mathrm{cnf}\ (E\ c\ d)$ and $\mathrm{Acc}\ d$ this gives
+  $\mathrm{Acc}\ (E\ c\ d) = \mathrm{Acc}\ z$.
+- If $c = a \ \wedge\ d \prec b$: then $R\ d\ b$, so $\mathrm{IH}_b$ gives
+  $\mathrm{Acc}\ (E\ a\ d) = \mathrm{Acc}\ z$.
+
+Hence $\mathrm{Acc}\ (E\ a\ b)$, proving Lemma B.
+
+**Lemma C (`accp_R_all`).** $\mathrm{cnf}\ x \Rightarrow \mathrm{Acc}\ x$.
+By structural induction on $x$. For $x = Z$, Lemma A. For $x = E\ a\ b$, the IH
+gives $\mathrm{Acc}\ a$, $\mathrm{Acc}\ b$ from $\mathrm{cnf}\ a$, $\mathrm{cnf}\ b$,
+and Lemma B (for exponent $a$) gives $\mathrm{Acc}\ (E\ a\ b)$.
+
+**Lemma D (`accp_R_any`).** $\mathrm{Acc}\ x$ for every $x$.
+If $\mathrm{cnf}\ x$, use Lemma C. If $\neg \mathrm{cnf}\ x$, then $R\ z\ x$
+requires $\mathrm{cnf}\ x$, so $x$ has no $R$-predecessor and is vacuously
+accessible.
+
+By Lemma D, $\mathrm{Acc}\ x$ holds for all $x$, so $\mathrm{wfP}\ R$ by
+`accp_wfpI`. $\square$
 
 ## 4. The measure $o$ (`omap`)
 

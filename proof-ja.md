@@ -69,8 +69,13 @@ $\mathrm{expand}$ の停止性は、無限連鎖 $S^{(0)} \to S^{(1)} \to \cdots
 
 $$\mathsf{ord} ::= Z \ \mid\ E\ a\ b \qquad (a, b \in \mathsf{ord})$$
 
-で表す。$Z = 0$、$E\ a\ b = \omega^{a} + b$ と読む。*先頭指数*は $\mathrm{lead}\ Z = Z$、
-$\mathrm{lead}\ (E\ a\ b) = a$。
+で表す。$Z = 0$、$E\ a\ b = \omega^{a} + b$ と読む。*先頭指数* $\mathrm{lead}$ は、その項の
+先頭（最大）の冪の指数を返す関数：
+
+$$\mathrm{lead}\ Z = Z, \qquad \mathrm{lead}\ (E\ a\ b) = a.$$
+
+例えば $\omega^{\omega} + \omega^{3} + 5 = E\ \omega\ (\omega^{3}+5)$ なら $\mathrm{lead} = \omega$、
+その尾部 $\omega^{3}+5$ なら $\mathrm{lead} = 3$。
 
 **定義 3.2（順序, `olt` / $\prec$）。** 再帰的な辞書式順序：
 
@@ -84,17 +89,74 @@ $Z$ より小さいものは無い。$x \preceq y$ は $x \prec y \vee x = y$。
 
 $$\mathrm{cnf}\ Z, \qquad \mathrm{cnf}\ (E\ a\ b) \iff \mathrm{cnf}\ a \ \wedge\ \mathrm{cnf}\ b \ \wedge\ (b = Z \ \vee\ \mathrm{lead}\ b \preceq a).$$
 
+最後の条件 $\mathrm{lead}\ b \preceq a$ は「尾部 $b$ の先頭指数が自分の指数 $a$ を超えない」、
+すなわち指数が左から右へ非増加であることを1段ずつ要求している。
+
 （順序の制約は本質的：*非* CNF 項の上では $\prec$ は整礎でない——例えば
 $E (E Z Z) Z \succ E Z (E (E Z Z) Z) \succ \cdots$ という「指数昇順」項の無限下降が作れる。
 CNF はこれを排除する。）
 
 **命題 3.4（`wfP_R`）。** $\prec$ は CNF 項の上で整礎。すなわち
-$R\ x\ y \iff \mathrm{cnf}\ x \wedge \mathrm{cnf}\ y \wedge x \prec y$ は整礎。
 
-*証明.* $R$-accessibility を `accp R` とする。全 CNF 項が accessible であることを**二重帰納**で
-示す（多重集合ライブラリは不使用）：補助補題 `accp_R_E` は、指数 $a$ の accessibility による
-帰納と末尾 $b$ の入れ子帰納で、$a, b$ が accessible なら $E\ a\ b$ も accessible を示す。
-`accp_R_all` が構造帰納で全 CNF 項を覆い、非 CNF 項は空虚に accessible。$\square$
+$$R\ x\ y \iff \mathrm{cnf}\ x \ \wedge\ \mathrm{cnf}\ y \ \wedge\ x \prec y$$
+
+は整礎。
+
+*証明.* $\mathrm{Acc}\ x$ を $R$ に関する accessibility（`accp R`）とする。これは
+
+$$\mathrm{Acc}\ x \iff (\forall y.\ R\ y\ x \Rightarrow \mathrm{Acc}\ y)$$
+
+を満たす**最小**の述語である。$\mathrm{wfP}\ R$ は「すべての $x$ で $\mathrm{Acc}\ x$」と同値（`accp_wfpI`）
+なので、**すべての $x$ で $\mathrm{Acc}\ x$** を示せばよい。4段階で進める。
+
+**補題 A（`accp_R_Z`）。** $\mathrm{Acc}\ Z$。
+$x \prec Z$ なる $x$ は存在しない（`not_olt_Z`）ので、$R\ x\ Z$ なる $x$ も存在しない。
+よって accessibility の条件は空虚に成立し $\mathrm{Acc}\ Z$。
+
+**補題 B（`accp_R_E`）。** $\mathrm{Acc}\ a$ かつ $\mathrm{cnf}\ a$ ならば、
+$\mathrm{cnf}\ (E\ a\ b)$ かつ $\mathrm{Acc}\ b$ なる任意の $b$ について $\mathrm{Acc}\ (E\ a\ b)$。
+
+$\mathrm{Acc}\ a$ に関する整礎帰納で示す。帰納法の仮定 $\mathrm{IH}_a$：
+$R\ a'\ a$（すなわち $\mathrm{cnf}\ a'$, $\mathrm{cnf}\ a$, $a' \prec a$）なるすべての $a'$ について
+本補題の主張が成り立つ。まず補助事実を示す：
+
+$$\text{(tail)}\qquad \mathrm{cnf}\ d \ \wedge\ \mathrm{lead}\ d \prec a \ \Longrightarrow\ \mathrm{Acc}\ d.$$
+
+$d$ の構造帰納による。
+$d = Z$ なら補題 A。
+$d = E\ e\ d'$ なら $\mathrm{cnf}$ の定義より $\mathrm{cnf}\ e$, $\mathrm{cnf}\ d'$,
+$(d' = Z \vee \mathrm{lead}\ d' \preceq e)$。$\mathrm{lead}\ d = e \prec a$ ゆえ $R\ e\ a$。
+さらに $\mathrm{lead}\ d' \prec a$：$d' = Z$ なら $\mathrm{lead}\ d' = Z \prec a$
+（$e \prec a$ より $a \neq Z$）、そうでなければ $\mathrm{lead}\ d' \preceq e \prec a$ を推移律
+（`ole_olt_trans`）で得る。構造帰納の仮定を $d'$ に適用して $\mathrm{Acc}\ d'$。
+$R\ e\ a$ に $\mathrm{IH}_a$ を適用すると「$e$ についての本補題」が成り立つので、
+$\mathrm{cnf}\ (E\ e\ d')$ と $\mathrm{Acc}\ d'$ から $\mathrm{Acc}\ (E\ e\ d') = \mathrm{Acc}\ d$。
+
+つぎに本体を、$\mathrm{Acc}\ b$ に関する整礎帰納で示す。帰納法の仮定 $\mathrm{IH}_b$：
+$R\ b'\ b$ なるすべての $b'$ で $\mathrm{Acc}\ (E\ a\ b')$。accessibility の定義より、
+$R\ z\ (E\ a\ b)$ なるすべての $z$ で $\mathrm{Acc}\ z$ を示せば $\mathrm{Acc}\ (E\ a\ b)$ が従う。
+$z = Z$ なら補題 A。$z = E\ c\ d$ のとき $\mathrm{cnf}\ c$, $\mathrm{cnf}\ d$,
+$(d = Z \vee \mathrm{lead}\ d \preceq c)$ であり、$z \prec E\ a\ b$ は
+
+$$c \prec a \qquad\vee\qquad (c = a \ \wedge\ d \prec b).$$
+
+- $c \prec a$ のとき：（tail）と同じ議論で $\mathrm{lead}\ d \prec a$ ゆえ（tail）より $\mathrm{Acc}\ d$。
+  また $R\ c\ a$ なので $\mathrm{IH}_a$ より「$c$ についての本補題」が成り立ち、
+  $\mathrm{cnf}\ (E\ c\ d)$ と $\mathrm{Acc}\ d$ から $\mathrm{Acc}\ (E\ c\ d) = \mathrm{Acc}\ z$。
+- $c = a \ \wedge\ d \prec b$ のとき：$R\ d\ b$ なので $\mathrm{IH}_b$ より
+  $\mathrm{Acc}\ (E\ a\ d) = \mathrm{Acc}\ z$。
+
+以上より $\mathrm{Acc}\ (E\ a\ b)$。補題 B が示せた。
+
+**補題 C（`accp_R_all`）。** $\mathrm{cnf}\ x \Rightarrow \mathrm{Acc}\ x$。
+$x$ の構造帰納。$x = Z$ は補題 A。$x = E\ a\ b$ は $\mathrm{cnf}\ a$, $\mathrm{cnf}\ b$ より
+帰納法の仮定で $\mathrm{Acc}\ a$, $\mathrm{Acc}\ b$ を得、補題 B（指数 $a$ に対して）で $\mathrm{Acc}\ (E\ a\ b)$。
+
+**補題 D（`accp_R_any`）。** 任意の $x$ で $\mathrm{Acc}\ x$。
+$\mathrm{cnf}\ x$ なら補題 C。$\neg \mathrm{cnf}\ x$ なら $R\ z\ x$ は $\mathrm{cnf}\ x$ を要求するので
+$x$ に $R$-前者は無く、空虚に $\mathrm{Acc}\ x$。
+
+補題 D とすべての $x$ での $\mathrm{Acc}\ x$、および `accp_wfpI` より $\mathrm{wfP}\ R$。$\square$
 
 ## 4. 測度 $o$ (`omap`)
 
