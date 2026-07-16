@@ -1,4 +1,4 @@
-[← Back](README.md) | [English](proof.md) | [Japanese](proof-ja.md)
+[← Back](../README.md) | [English](proof.md) | [Japanese](proof-ja.md)
 
 # Termination of Bashicu's Primitive Sequence System
 
@@ -6,7 +6,11 @@ We prove termination of Bashicu's *Primitive Sequence System*. Each sequence
 $S \in \mathsf{list}(\mathbb{N})$ is mapped to a value $o(S)$ in a well-founded
 order $(\mathsf{hord}, \prec)$, and each expansion step strictly decreases $o$;
 well-foundedness then forbids any infinite expansion. The argument is formalised
-in Isabelle/HOL (correspondence in §8).
+in Isabelle/HOL (correspondence in §8). This is the **multiset** development,
+where $\mathsf{hord}$ is the hereditarily-finite-multiset representation of the
+ordinals below $\varepsilon_0$; the companion
+[without-multiset/proof.md](../without-multiset/proof.md) proves the same
+theorem using Cantor normal forms and `imports Main` only.
 
 A relation $R$ is *well-founded* when there is no infinite descending chain, i.e.
 no $x_0, x_1, x_2, \dots$ with $R(x_{i+1}, x_i)$ for all $i$.
@@ -263,21 +267,21 @@ Statements: `prss_paper.thy` (`p_*`, `sorry`); proofs: `m_*` in
 |---|---|---|
 | $\mathrm{multp}$ (Def. 2.2) | `multp` | `HOL-Library.Multiset` |
 | Prop. 2.3 | `wfp_multp` | `HOL-Library.Multiset` |
-| $\to$ (Def. 3.1) | `step` (`drop0`, `bad`) | [prss_defs.thy:76](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L76) |
-| $\mathrm{badset}$ / $\mathrm{badroot}$ | `badset` / `badroot` | [prss_defs.thy:67](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L67), [70](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L70) |
-| $\mathsf{hord}$, $H$ | `datatype hord = H "hord multiset"` | [prss_ordinal.thy:16](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L16) |
-| $\prec$ | `hlt` | [prss_ordinal.thy:20](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L20) |
-| Prop. 4.3 | `wfP_hlt` | [prss_ordinal.thy:199](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L199) |
-| $o$ (Def. 5.1) | `omap` | [prss_defs.thy:40](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L40) |
-| Lemma 6.1 | `omap_snoc_increases` | [prss_mechanized.thy:106](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L106) |
-| Prop. 6.2 | `m_drop0_decreases` | [prss_mechanized.thy:161](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L161) |
-| Lemma 6.3 | `omap_rep` | [prss_mechanized.thy:204](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L204) |
-| Lemma 6.4 | `omap_BfM` | [prss_mechanized.thy:228](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L228) |
-| Lemma 6.5 | `omap_core` | [prss_mechanized.thy:246](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L246) |
-| Lemma 6.6 | `omap_BADCTX` | [prss_mechanized.thy:303](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L303) |
-| Prop. 6.7 | `m_bad_decreases` | [prss_mechanized.thy:426](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L426) |
-| Thm. 7.1 | `m_step_decreases` | [prss_mechanized.thy:494](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L494) |
-| Thm. 7.2 | `m_termination`, `m_no_infinite_expansion` | [prss_mechanized.thy:506](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L506), [515](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L515) |
+| $\to$ (Def. 3.1) | `step` (`drop0`, `bad`) | [prss_defs.thy:76](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_defs.thy#L76) |
+| $\mathrm{badset}$ / $\mathrm{badroot}$ | `badset` / `badroot` | [prss_defs.thy:67](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_defs.thy#L67), [70](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_defs.thy#L70) |
+| $\mathsf{hord}$, $H$ | `datatype hord = H "hord multiset"` | [prss_ordinal.thy:16](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_ordinal.thy#L16) |
+| $\prec$ | `hlt` | [prss_ordinal.thy:20](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_ordinal.thy#L20) |
+| Prop. 4.3 | `wfP_hlt` | [prss_ordinal.thy:199](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_ordinal.thy#L199) |
+| $o$ (Def. 5.1) | `omap` | [prss_defs.thy:40](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_defs.thy#L40) |
+| Lemma 6.1 | `omap_snoc_increases` | [prss_mechanized.thy:106](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_mechanized.thy#L106) |
+| Prop. 6.2 | `m_drop0_decreases` | [prss_mechanized.thy:161](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_mechanized.thy#L161) |
+| Lemma 6.3 | `omap_rep` | [prss_mechanized.thy:204](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_mechanized.thy#L204) |
+| Lemma 6.4 | `omap_BfM` | [prss_mechanized.thy:228](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_mechanized.thy#L228) |
+| Lemma 6.5 | `omap_core` | [prss_mechanized.thy:246](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_mechanized.thy#L246) |
+| Lemma 6.6 | `omap_BADCTX` | [prss_mechanized.thy:303](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_mechanized.thy#L303) |
+| Prop. 6.7 | `m_bad_decreases` | [prss_mechanized.thy:426](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_mechanized.thy#L426) |
+| Thm. 7.1 | `m_step_decreases` | [prss_mechanized.thy:494](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_mechanized.thy#L494) |
+| Thm. 7.2 | `m_termination`, `m_no_infinite_expansion` | [prss_mechanized.thy:506](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_mechanized.thy#L506), [515](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_mechanized.thy#L515) |
 
 ---
 

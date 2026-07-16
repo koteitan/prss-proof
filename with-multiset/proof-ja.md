@@ -1,10 +1,13 @@
-[← 戻る](README-ja.md) | [English](proof.md) | [Japanese](proof-ja.md)
+[← 戻る](../README-ja.md) | [English](proof.md) | [Japanese](proof-ja.md)
 
 # バシク氏の原始数列システムの停止性
 
 バシク氏の*原始数列システム*の停止性を証明する。各数列 $S \in \mathsf{list}(\mathbb{N})$ を
 整礎順序 $(\mathsf{hord}, \prec)$ の値 $o(S)$ に写し、展開の各ステップが $o$ を真に減少させる
 ことを示す。整礎性により無限展開は排除される。Isabelle/HOL で形式化している（対応は §8）。
+これは**多重集合**版で、$\mathsf{hord}$ は $\varepsilon_0$ 未満の順序数を遺伝的有限多重集合で
+表したもの。対になる [without-multiset/proof-ja.md](../without-multiset/proof-ja.md) は
+カントール標準形と `imports Main` のみで同じ定理を証明している。
 
 関係 $R$ が*整礎*とは、無限の下降列が存在しないこと、すなわち、すべての $i$ で
 $R(x_{i+1}, x_i)$ となる $x_0, x_1, x_2, \dots$ が存在しないことをいう。
@@ -240,21 +243,21 @@ $o^{-1}(\prec)$ は整礎（整礎関係の逆像）。$\square$
 |---|---|---|
 | $\mathrm{multp}$（定義 2.2） | `multp` | `HOL-Library.Multiset` |
 | 命題 2.3 | `wfp_multp` | `HOL-Library.Multiset` |
-| $\to$（定義 3.1） | `step`（`drop0`, `bad`） | [prss_defs.thy:76](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L76) |
-| $\mathrm{badset}$ / $\mathrm{badroot}$ | `badset` / `badroot` | [prss_defs.thy:67](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L67), [70](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L70) |
-| $\mathsf{hord}$, $H$ | `datatype hord = H "hord multiset"` | [prss_ordinal.thy:16](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L16) |
-| $\prec$ | `hlt` | [prss_ordinal.thy:20](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L20) |
-| 命題 4.3 | `wfP_hlt` | [prss_ordinal.thy:199](https://github.com/koteitan/prss-proof/blob/main/prss_ordinal.thy#L199) |
-| $o$（定義 5.1） | `omap` | [prss_defs.thy:40](https://github.com/koteitan/prss-proof/blob/main/prss_defs.thy#L40) |
-| 補題 6.1 | `omap_snoc_increases` | [prss_mechanized.thy:106](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L106) |
-| 命題 6.2 | `m_drop0_decreases` | [prss_mechanized.thy:161](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L161) |
-| 補題 6.3 | `omap_rep` | [prss_mechanized.thy:204](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L204) |
-| 補題 6.4 | `omap_BfM` | [prss_mechanized.thy:228](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L228) |
-| 補題 6.5 | `omap_core` | [prss_mechanized.thy:246](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L246) |
-| 補題 6.6 | `omap_BADCTX` | [prss_mechanized.thy:303](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L303) |
-| 命題 6.7 | `m_bad_decreases` | [prss_mechanized.thy:426](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L426) |
-| 定理 7.1 | `m_step_decreases` | [prss_mechanized.thy:494](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L494) |
-| 定理 7.2 | `m_termination`, `m_no_infinite_expansion` | [prss_mechanized.thy:506](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L506), [515](https://github.com/koteitan/prss-proof/blob/main/prss_mechanized.thy#L515) |
+| $\to$（定義 3.1） | `step`（`drop0`, `bad`） | [prss_defs.thy:76](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_defs.thy#L76) |
+| $\mathrm{badset}$ / $\mathrm{badroot}$ | `badset` / `badroot` | [prss_defs.thy:67](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_defs.thy#L67), [70](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_defs.thy#L70) |
+| $\mathsf{hord}$, $H$ | `datatype hord = H "hord multiset"` | [prss_ordinal.thy:16](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_ordinal.thy#L16) |
+| $\prec$ | `hlt` | [prss_ordinal.thy:20](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_ordinal.thy#L20) |
+| 命題 4.3 | `wfP_hlt` | [prss_ordinal.thy:199](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_ordinal.thy#L199) |
+| $o$（定義 5.1） | `omap` | [prss_defs.thy:40](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_defs.thy#L40) |
+| 補題 6.1 | `omap_snoc_increases` | [prss_mechanized.thy:106](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_mechanized.thy#L106) |
+| 命題 6.2 | `m_drop0_decreases` | [prss_mechanized.thy:161](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_mechanized.thy#L161) |
+| 補題 6.3 | `omap_rep` | [prss_mechanized.thy:204](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_mechanized.thy#L204) |
+| 補題 6.4 | `omap_BfM` | [prss_mechanized.thy:228](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_mechanized.thy#L228) |
+| 補題 6.5 | `omap_core` | [prss_mechanized.thy:246](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_mechanized.thy#L246) |
+| 補題 6.6 | `omap_BADCTX` | [prss_mechanized.thy:303](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_mechanized.thy#L303) |
+| 命題 6.7 | `m_bad_decreases` | [prss_mechanized.thy:426](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_mechanized.thy#L426) |
+| 定理 7.1 | `m_step_decreases` | [prss_mechanized.thy:494](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_mechanized.thy#L494) |
+| 定理 7.2 | `m_termination`, `m_no_infinite_expansion` | [prss_mechanized.thy:506](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_mechanized.thy#L506), [515](https://github.com/koteitan/prss-proof/blob/main/with-multiset/prss_mechanized.thy#L515) |
 
 ---
 
