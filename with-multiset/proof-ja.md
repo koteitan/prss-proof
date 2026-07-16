@@ -1,6 +1,6 @@
 [← 戻る](../README-ja.md) | [English](proof.md) | [Japanese](proof-ja.md)
 
-# バシク氏の原始数列システムの停止性
+# 原始数列システムの停止性
 
 バシク氏の*原始数列システム*の停止性を証明する。各数列 $S \in \mathsf{list}(\mathbb{N})$ を
 整礎順序 $(\mathsf{hord}, \prec)$ の値 $o(S)$ に写し、展開の各ステップが $o$ を真に減少させる

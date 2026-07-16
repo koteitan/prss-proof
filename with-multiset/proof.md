@@ -1,6 +1,6 @@
 [← Back](../README.md) | [English](proof.md) | [Japanese](proof-ja.md)
 
-# Termination of Bashicu's Primitive Sequence System
+# Termination of Primitive Sequence System
 
 We prove termination of Bashicu's *Primitive Sequence System*. Each sequence
 $S \in \mathsf{list}(\mathbb{N})$ is mapped to a value $o(S)$ in a well-founded
