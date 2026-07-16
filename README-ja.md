@@ -2,18 +2,18 @@
 
 # prss-proof
 
-Version: **v0.1.11**
+Version: **v0.1.12**
 
 バシク氏の **原始数列システム（Primitive Sequence System）** が必ず停止する
 ことを、**Isabelle/HOL** で機械的に検証したものです。
 
 方針は古典的です。各原始数列を $\varepsilon_0$ 未満の順序数に写し、`expand` の各
-ステップでその順序数が真に減少することを示します。$\varepsilon_0$ 未満の順序数は
+ステップでその順序数が真に減少することを示します。 $\varepsilon_0$ 未満の順序数は
 整礎なので、無限に展開が続くことはありません。
 
 ## 2つの独立した証明
 
-同じ定理を、$\varepsilon_0$ 未満の順序数の**2通りの表現**で証明しています。
+同じ定理を、 $\varepsilon_0$ 未満の順序数の**2通りの表現**で証明しています。
 各ディレクトリは自己完結しています。
 
 | | [`with-multiset/`](with-multiset/proof-ja.md) | [`without-multiset/`](without-multiset/proof-ja.md) |
@@ -30,7 +30,7 @@ Version: **v0.1.11**
 多重集合が素直な表現であり、多重集合順序の整礎性（Dershowitz–Manna）は
 `HOL-Library.Multiset` からタダで手に入ります。`without-multiset/` は
 多重集合の概念が**回避可能**であることの実証です。カントール標準形は指数の**列**なので、
-全補題にソート不変条件（`cnf`）を持ち回り、$\varepsilon_0$ の整礎性を一から証明する
+全補題にソート不変条件（`cnf`）を持ち回り、 $\varepsilon_0$ の整礎性を一から証明する
 必要があります。結果としてかなり長くなりますが、それこそが要点で、
 多重集合ライブラリが何を買ってくれていたのかを測っています。
 

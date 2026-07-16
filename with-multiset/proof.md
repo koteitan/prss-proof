@@ -105,7 +105,7 @@ $f(n)=n^2$), with $X = \mathrm{length}\ S$ and $m = \mathrm{last}\ S$,
 $$\mathrm{expand}([][n]) = n, \qquad
 \mathrm{expand}(S[n]) =
 \begin{cases}
-\mathrm{expand}((\mathrm{butlast}\ S)[f(n)]) & m = 0,\\[2pt]
+\mathrm{expand}((\mathrm{butlast}\ S)[f(n)]) & m = 0,\\
 \mathrm{expand}((G \mathbin{@} \underbrace{B \mathbin{@} \cdots \mathbin{@} B}_{f(n)+1})[f(n)]) & m > 0,
 \end{cases}$$
 
